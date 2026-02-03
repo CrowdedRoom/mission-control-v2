@@ -1,101 +1,278 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect } from 'react'
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core'
+import { arrayMove } from '@dnd-kit/sortable'
+import { Task, Activity, PROJECTS } from '@/lib/supabase'
+import { KanbanColumn } from '@/components/KanbanColumn'
+import { TaskCard } from '@/components/TaskCard'
+import { TaskModal } from '@/components/TaskModal'
+import { ActivityFeed } from '@/components/ActivityFeed'
+import { StatsBar } from '@/components/StatsBar'
+import { Plus, RefreshCw } from 'lucide-react'
+
+const COLUMNS = [
+  { id: 'backlog', title: 'Backlog', emoji: '📥', color: '#64748b' },
+  { id: 'in_progress', title: 'In Progress', emoji: '🔨', color: '#3b82f6' },
+  { id: 'review', title: 'Review', emoji: '👀', color: '#a855f7' },
+  { id: 'done', title: 'Done', emoji: '✅', color: '#22c55e' }
+]
+
+export default function Dashboard() {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [activeColumn, setActiveColumn] = useState<string>('backlog')
+  const [activeDragTask, setActiveDragTask] = useState<Task | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [lastSync, setLastSync] = useState<Date>(new Date())
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  )
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      const [tasksRes, activityRes] = await Promise.all([
+        fetch('/api/tasks'),
+        fetch('/api/activity')
+      ])
+      
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json()
+        setTasks(tasksData)
+      }
+      
+      if (activityRes.ok) {
+        const activityData = await activityRes.json()
+        setActivities(activityData)
+      }
+      
+      setLastSync(new Date())
+    } catch (error) {
+      console.error('Failed to load data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (!over) return
+
+    const taskId = active.id as string
+    const newStatus = over.id as Task['status']
+    
+    const task = tasks.find(t => t.id === taskId)
+    if (!task || task.status === newStatus) return
+
+    // Optimistic update
+    setTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, status: newStatus } : t
+    ))
+
+    // API call
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, updated_by: 'dj' })
+      })
+      
+      // Refresh activities
+      const activityRes = await fetch('/api/activity')
+      if (activityRes.ok) {
+        setActivities(await activityRes.json())
+      }
+    } catch (error) {
+      console.error('Failed to update task:', error)
+      // Revert on error
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? task : t
+      ))
+    }
+  }
+
+  const handleSaveTask = async (taskData: Partial<Task>) => {
+    try {
+      if (editingTask) {
+        // Update existing
+        const res = await fetch(`/api/tasks/${editingTask.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...taskData, updated_by: 'dj' })
+        })
+        
+        if (res.ok) {
+          const updated = await res.json()
+          setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
+        }
+      } else {
+        // Create new
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...taskData, created_by: 'dj' })
+        })
+        
+        if (res.ok) {
+          const created = await res.json()
+          setTasks(prev => [created, ...prev])
+        }
+      }
+      
+      // Refresh activities
+      const activityRes = await fetch('/api/activity')
+      if (activityRes.ok) {
+        setActivities(await activityRes.json())
+      }
+    } catch (error) {
+      console.error('Failed to save task:', error)
+    }
+  }
+
+  const handleDeleteTask = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return
+    
+    try {
+      await fetch(`/api/tasks/${id}`, { method: 'DELETE' })
+      setTasks(prev => prev.filter(t => t.id !== id))
+    } catch (error) {
+      console.error('Failed to delete task:', error)
+    }
+  }
+
+  const openAddModal = (columnId: string) => {
+    setActiveColumn(columnId)
+    setEditingTask(null)
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (task: Task) => {
+    setEditingTask(task)
+    setIsModalOpen(true)
+  }
+
+  const getTasksByStatus = (status: string) => 
+    tasks.filter(t => t.status === status)
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-slate-400 flex items-center gap-3">
+          <RefreshCw className="animate-spin" size={24} />
+          Loading Mission Control...
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      {/* Header */}
+      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🦝</span>
+            <div>
+              <h1 className="text-xl font-bold">Mission Control Dashboard</h1>
+              <p className="text-sm text-slate-400">DJ White & Larry</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 text-sm text-slate-400">
+            <span>Last synced: {lastSync.toLocaleTimeString()}</span>
+            <button
+              onClick={loadData}
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto p-6">
+        {/* Stats */}
+        <StatsBar tasks={tasks} />
+
+        {/* Quick Actions */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => openAddModal('backlog')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Plus size={18} />
+            New Task
+          </button>
+        </div>
+
+        {/* Kanban Board */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {COLUMNS.map(column => (
+              <KanbanColumn
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                emoji={column.emoji}
+                color={column.color}
+                tasks={getTasksByStatus(column.id)}
+                onEdit={openEditModal}
+                onDelete={handleDeleteTask}
+                onAdd={() => openAddModal(column.id)}
+              />
+            ))}
+          </div>
+
+          <DragOverlay>
+            {activeDragTask ? (
+              <TaskCard
+                task={activeDragTask}
+                onEdit={() => {}}
+                onDelete={() => {}}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+
+        {/* Activity Feed */}
+        <div className="mt-8">
+          <ActivityFeed activities={activities} />
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      {/* Modal */}
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveTask}
+        task={editingTask}
+        defaultStatus={activeColumn}
+      />
     </div>
-  );
+  )
 }
