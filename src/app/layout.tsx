@@ -29,14 +29,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-900 text-slate-100`}
       >
-        <div className="flex h-screen">
-          {/* Sidebar */}
-          <aside className="w-64 bg-slate-800 border-r border-slate-700 flex-shrink-0">
-            <Navigation />
-          </aside>
+        <div className="flex min-h-screen">
+          {/* Sidebar - Navigation handles mobile/desktop display */}
+          <Navigation />
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto pt-16 lg:pt-0 lg:ml-0">
             {children}
           </main>
         </div>
