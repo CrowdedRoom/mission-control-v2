@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity } from '@/lib/db'
+import { Activity } from '@/lib/types'
 import { formatDistanceToNow } from 'date-fns'
 import { GitCommit, CheckCircle2, Plus, Play, Eye } from 'lucide-react'
 

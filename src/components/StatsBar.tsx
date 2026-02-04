@@ -1,7 +1,7 @@
 'use client'
 
-import { Task } from '@/lib/db'
-import { CheckCircle2, Clock, PlayCircle, Eye } from 'lucide-react'
+import { Task } from '@/lib/types'
+import { CheckCircle2, PlayCircle, Eye } from 'lucide-react'
 
 interface StatsBarProps {
   tasks: Task[]
