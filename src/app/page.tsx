@@ -178,7 +178,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-slate-400 flex items-center gap-3">
           <RefreshCw className="animate-spin" size={24} />
-          Loading Mission Control...
+          Loading Our Command Center...
         </div>
       </div>
     )
@@ -192,8 +192,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">🦝</span>
             <div>
-              <h1 className="text-xl font-bold">Mission Control Dashboard</h1>
-              <p className="text-sm text-slate-400">DJ White & Larry</p>
+              <h1 className="text-xl font-bold">Mission Control</h1>
+              <p className="text-sm text-slate-400">Our Command Center — Work, Life & Everything</p>
             </div>
           </div>
           

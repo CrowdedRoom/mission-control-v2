@@ -26,8 +26,23 @@ export type Project = {
 }
 
 export const PROJECTS: Project[] = [
+  // Development Projects
   { id: 'clayboss', name: 'Clayboss', emoji: '🏺', color: '#a855f7' },
   { id: 'poker-sesh', name: 'Poker Sesh', emoji: '🎴', color: '#3b82f6' },
   { id: 'sticker-app', name: 'Sticker App', emoji: '🎨', color: '#eab308' },
   { id: 'mission-control', name: 'Mission Control', emoji: '🦝', color: '#22c55e' },
+  
+  // Life & Family
+  { id: 'family', name: 'Family', emoji: '👨‍👩‍👧‍👦', color: '#ef4444' },
+  { id: 'home', name: 'Home Projects', emoji: '🏠', color: '#f97316' },
+  { id: 'health', name: 'Health & Wellness', emoji: '💪', color: '#14b8a6' },
+  { id: 'finance', name: 'Finances', emoji: '💰', color: '#eab308' },
+  
+  // Personal Growth
+  { id: 'learning', name: 'Learning', emoji: '📚', color: '#8b5cf6' },
+  { id: 'career', name: 'Career Development', emoji: '💼', color: '#6366f1' },
+  
+  // Admin & Planning
+  { id: 'planning', name: 'Planning & Goals', emoji: '🎯', color: '#ec4899' },
+  { id: 'admin', name: 'Admin & Logistics', emoji: '📋', color: '#64748b' },
 ]
