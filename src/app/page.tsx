@@ -12,7 +12,7 @@ import {
   useSensors
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { Task, Activity, PROJECTS } from '@/lib/supabase'
+import { Task, Activity, PROJECTS } from '@/lib/db'
 import { KanbanColumn } from '@/components/KanbanColumn'
 import { TaskCard } from '@/components/TaskCard'
 import { TaskModal } from '@/components/TaskModal'

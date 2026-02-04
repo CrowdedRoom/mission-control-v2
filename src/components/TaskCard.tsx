@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Task, PROJECTS } from '@/lib/supabase'
+import { Task, PROJECTS } from '@/lib/db'
 import { GripVertical, Pencil, Trash2 } from 'lucide-react'
 
 interface TaskCardProps {

@@ -1,6 +1,6 @@
 'use client'
 
-import { Task } from '@/lib/supabase'
+import { Task } from '@/lib/db'
 import { CheckCircle2, Clock, PlayCircle, Eye } from 'lucide-react'
 
 interface StatsBarProps {

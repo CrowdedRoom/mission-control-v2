@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getActivity } from '@/lib/db'
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from('activity')
-    .select('*')
-    .order('timestamp', { ascending: false })
-    .limit(20)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    const activity = await getActivity()
+    // Return only last 20 activities
+    return NextResponse.json(activity.slice(0, 20))
+  } catch (error) {
+    console.error('Error fetching activity:', error)
+    return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 })
   }
-
-  return NextResponse.json(data)
 }

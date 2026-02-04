@@ -1,38 +1,39 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getTasks, createTask, logActivity } from '@/lib/db'
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    const tasks = await getTasks()
+    return NextResponse.json(tasks)
+  } catch (error) {
+    console.error('Error fetching tasks:', error)
+    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
   }
-
-  return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert(body)
-    .select()
-    .single()
+  try {
+    const body = await request.json()
+    
+    const task = await createTask({
+      title: body.title,
+      description: body.description || null,
+      status: body.status || 'backlog',
+      assignee: body.assignee || null,
+      project: body.project || 'mission-control',
+      priority: body.priority || 'medium'
+    })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    // Log activity
+    await logActivity(
+      `created task "${task.title}"`,
+      body.created_by || 'dj',
+      task.id
+    )
+
+    return NextResponse.json(task)
+  } catch (error) {
+    console.error('Error creating task:', error)
+    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
   }
-
-  // Log activity
-  await supabase.from('activity').insert({
-    task_id: data.id,
-    action: `created task "${data.title}"`,
-    actor: body.created_by || 'dj'
-  })
-
-  return NextResponse.json(data)
 }

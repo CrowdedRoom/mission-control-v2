@@ -1,23 +1,23 @@
 # 🦝 Mission Control Dashboard v2
 
-A full-stack project management dashboard for DJ White and Larry to track development work together.
+A full-stack project management dashboard for DJ White and Larry to track development work together. Now with **local JSON database** — no external services required!
 
 ## ✨ Features
 
 - 🎯 **Kanban Board** — Drag & drop tasks between columns
-- 💾 **Real Database** — Supabase PostgreSQL backend
+- 💾 **Local Database** — JSON file storage, no Supabase needed
 - 📝 **Full CRUD** — Create, edit, delete tasks
 - 👥 **Assignees** — Assign tasks to DJ or Larry
 - 🏷️ **Projects** — Tag tasks by project with colors
 - 🔥 **Priority Levels** — Low, Medium, High
-- 📊 **Activity Feed** — Real-time action logging
+- 📊 **Activity Feed** — Action logging
 - 📈 **Stats Dashboard** — Track progress
 - 🌙 **Dark Mode** — Sleek, modern UI
 
 ## 🛠 Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
-- **Database:** Supabase (PostgreSQL)
+- **Database:** Local JSON file (Node.js fs)
 - **Styling:** Tailwind CSS
 - **Drag & Drop:** @dnd-kit
 - **Icons:** Lucide React
@@ -25,40 +25,26 @@ A full-stack project management dashboard for DJ White and Larry to track develo
 
 ## 🚀 Setup
 
-### 1. Create Supabase Project
-
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. In the SQL Editor, run the contents of `supabase/schema.sql`
-3. Go to Settings → API and copy:
-   - Project URL
-   - Anon/public key
-
-### 2. Configure Environment
-
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your Supabase credentials:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### 3. Install & Run
+### 1. Install Dependencies
 
 ```bash
 pnpm install
+```
+
+### 2. Run Development Server
+
+```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) 🎉
+Open [http://localhost:3000](http://http://localhost:3000) 🎉
+
+That's it! No database setup required — data is stored in `data/db.json`.
 
 ## 📁 Project Structure
 
 ```
-mission-control-v2/
+mission-control/
 ├── src/
 │   ├── app/
 │   │   ├── api/
@@ -74,10 +60,10 @@ mission-control-v2/
 │   │   ├── ActivityFeed.tsx   # Activity sidebar
 │   │   └── StatsBar.tsx       # Stats at top
 │   └── lib/
-│       └── supabase.ts        # Supabase client
-├── supabase/
-│   └── schema.sql             # Database schema
-└── .env.example
+│       └── db.ts              # Local JSON database
+├── data/                      # Local database storage
+│   └── db.json               # Auto-created on first run
+└── package.json
 ```
 
 ## 🎯 Usage
@@ -88,6 +74,43 @@ mission-control-v2/
 4. **Delete Tasks** — Hover and click the trash icon
 5. **View Activity** — See recent actions in the sidebar
 
+## 💾 Database
+
+Data is stored in `data/db.json` as plain JSON:
+
+```json
+{
+  "tasks": [
+    {
+      "id": "...",
+      "title": "Task name",
+      "description": "Task details",
+      "status": "in_progress",
+      "assignee": "dj",
+      "project": "clayboss",
+      "priority": "high",
+      "created_at": "...",
+      "updated_at": "..."
+    }
+  ],
+  "activity": [
+    {
+      "id": "...",
+      "task_id": "...",
+      "action": "created task \"Task name\"",
+      "actor": "dj",
+      "timestamp": "..."
+    }
+  ]
+}
+```
+
+### Backup & Migration
+
+- **Backup:** Copy `data/db.json` to backup
+- **Migration:** JSON format makes it easy to migrate data if needed
+- **Git:** Add `data/` to `.gitignore` if you don't want to commit data
+
 ## 🚀 Deploy to Vercel
 
 ```bash
@@ -95,7 +118,7 @@ vercel login
 vercel --prod
 ```
 
-Add your environment variables in the Vercel dashboard.
+Note: Since this uses local file storage, it works best as a **local development tool**. For serverless deployments, you'd need to switch to a proper database.
 
 ## 👥 Team
 
@@ -104,4 +127,4 @@ Add your environment variables in the Vercel dashboard.
 
 ---
 
-*Built with Next.js + Supabase by Larry for DJ*
+*Built with Next.js + Local JSON by Larry for DJ*

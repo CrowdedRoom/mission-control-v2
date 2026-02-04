@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Task, PROJECTS } from '@/lib/supabase'
+import { Task, PROJECTS } from '@/lib/db'
 import { X } from 'lucide-react'
 
 interface TaskModalProps {

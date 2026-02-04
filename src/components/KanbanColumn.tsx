@@ -2,7 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { Task } from '@/lib/supabase'
+import { Task } from '@/lib/db'
 import { TaskCard } from './TaskCard'
 import { Plus } from 'lucide-react'
 

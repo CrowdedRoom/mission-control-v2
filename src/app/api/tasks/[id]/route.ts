@@ -1,57 +1,63 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { updateTask, deleteTask, getTaskById, logActivity } from '@/lib/db'
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const body = await request.json()
-  const { id } = params
+  try {
+    const body = await request.json()
+    const { id } = params
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .update(body)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  // Log activity for status changes
-  if (body.status) {
-    const statusLabels: Record<string, string> = {
-      backlog: 'moved to Backlog',
-      in_progress: 'started work on',
-      review: 'submitted for review',
-      done: 'completed'
+    // Get task for activity logging
+    const existingTask = await getTaskById(id)
+    if (!existingTask) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
-    
-    await supabase.from('activity').insert({
-      task_id: id,
-      action: `${statusLabels[body.status]} "${data.title}"`,
-      actor: body.updated_by || 'dj'
-    })
-  }
 
-  return NextResponse.json(data)
+    const task = await updateTask(id, body)
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    }
+
+    // Log activity for status changes
+    if (body.status && body.status !== existingTask.status) {
+      const statusLabels: Record<string, string> = {
+        backlog: 'moved to Backlog',
+        in_progress: 'started work on',
+        review: 'submitted for review',
+        done: 'completed'
+      }
+      
+      await logActivity(
+        `${statusLabels[body.status]} "${task.title}"`,
+        body.updated_by || 'dj',
+        id
+      )
+    }
+
+    return NextResponse.json(task)
+  } catch (error) {
+    console.error('Error updating task:', error)
+    return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
+  }
 }
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params
+  try {
+    const { id } = params
 
-  const { error } = await supabase
-    .from('tasks')
-    .delete()
-    .eq('id', id)
+    const success = await deleteTask(id)
+    if (!success) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    }
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting task:', error)
+    return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
   }
-
-  return NextResponse.json({ success: true })
 }
