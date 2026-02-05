@@ -35,6 +35,18 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
     high: 'bg-red-500/20 text-red-400'
   }
 
+  const priorityEmojis = {
+    low: '🟢',
+    medium: '🟡',
+    high: '🔴'
+  }
+
+  const priorityLabels = {
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High'
+  }
+
   const assigneeEmojis = {
     dj: '👤',
     larry: '🦝'
@@ -67,7 +79,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
               {project?.emoji} {project?.name}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
-              {task.priority}
+              {priorityEmojis[task.priority]} {priorityLabels[task.priority]}
             </span>
           </div>
           
