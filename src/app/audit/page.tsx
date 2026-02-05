@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
@@ -27,6 +27,7 @@ interface AuditItem {
   impact: 'high' | 'medium' | 'low'
   status: 'backlog' | 'in-progress' | 'done'
   priority: 1 | 2 | 3
+  task_id?: string  // ID of created task (if converted to task)
 }
 
 const defaultItems: AuditItem[] = [
@@ -254,12 +255,50 @@ const getImpactColor = (impact: AuditItem['impact']) => {
 
 export default function AuditPage() {
   const router = useRouter()
-  const [items, setItems] = useState<AuditItem[]>(defaultItems)
+  const [items, setItems] = useState<AuditItem[]>(() => {
+    // Load from localStorage, fallback to defaults
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('auditItems')
+      if (stored) {
+        try {
+          return JSON.parse(stored)
+        } catch (e) {
+          console.error('Failed to parse stored audit items:', e)
+        }
+      }
+    }
+    return defaultItems
+  })
   const [filter, setFilter] = useState<'all' | AuditItem['category']>('all')
   const [projectFilter, setProjectFilter] = useState<'all' | string>('all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editData, setEditData] = useState<Partial<AuditItem>>({})
+
+  // Persist items to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auditItems', JSON.stringify(items))
+    }
+  }, [items])
+
+  // Check for task IDs returned from tasks page (on mount)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const createdTasks = sessionStorage.getItem('createdTaskIds')
+      if (createdTasks) {
+        try {
+          const taskMap = JSON.parse(createdTasks) // { audit_id: task_id }
+          setItems(prev => prev.map(item => 
+            taskMap[item.id] ? { ...item, task_id: taskMap[item.id] } : item
+          ))
+          sessionStorage.removeItem('createdTaskIds')
+        } catch (e) {
+          console.error('Failed to process created task IDs:', e)
+        }
+      }
+    }
+  }, [])
 
   const filtered = items.filter(item => {
     if (filter !== 'all' && item.category !== filter) return false
@@ -301,8 +340,23 @@ export default function AuditPage() {
   const createTasks = () => {
     const selectedItems = items.filter(item => selected.has(item.id))
     
+    // Filter out items that already have tasks
+    const itemsToCreate = selectedItems.filter(item => !item.task_id)
+    const alreadyCreated = selectedItems.filter(item => item.task_id)
+    
+    if (alreadyCreated.length > 0) {
+      const msg = alreadyCreated.length === 1 
+        ? '1 item already has a task created' 
+        : `${alreadyCreated.length} items already have tasks created`
+      alert(`${msg}. Only creating tasks for items without existing tasks.`)
+    }
+    
+    if (itemsToCreate.length === 0) {
+      return
+    }
+    
     // Store tasks in sessionStorage for the tasks page to pick up
-    const tasks = selectedItems.map(item => ({
+    const tasks = itemsToCreate.map(item => ({
       id: `task-${item.id}`,
       title: item.title,
       description: item.description,
@@ -414,7 +468,11 @@ export default function AuditPage() {
           {filtered.map(item => (
             <div 
               key={item.id}
-              className={`bg-slate-800 rounded-lg p-6 shadow-sm hover:shadow-md transition-all border-l-4 border-blue-500 ${
+              className={`bg-slate-800 rounded-lg p-6 shadow-sm hover:shadow-md transition-all border-l-4 ${
+                item.task_id 
+                  ? 'border-green-500' 
+                  : 'border-blue-500'
+              } ${
                 selected.has(item.id) ? 'ring-2 ring-blue-500' : ''
               }`}
             >
@@ -424,7 +482,13 @@ export default function AuditPage() {
                   type="checkbox"
                   checked={selected.has(item.id)}
                   onChange={() => toggleSelect(item.id)}
-                  className="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-700 cursor-pointer"
+                  disabled={!!item.task_id}
+                  className={`mt-1 w-4 h-4 rounded border-slate-600 ${
+                    item.task_id 
+                      ? 'bg-slate-600 cursor-not-allowed opacity-50' 
+                      : 'bg-slate-700 cursor-pointer'
+                  }`}
+                  title={item.task_id ? 'Task already created' : 'Select to create task'}
                 />
                 <div className="flex items-center gap-2 flex-1">
                   <div className={`p-2 rounded border ${getCategoryColor(item.category)}`}>
@@ -485,10 +549,24 @@ export default function AuditPage() {
 
               {/* Footer */}
               <div className="flex items-center justify-between text-xs border-t border-slate-700 pt-3">
-                <span className={`font-semibold ${getImpactColor(item.impact)}`}>
-                  {item.impact.toUpperCase()} IMPACT
-                </span>
-                <span className="text-slate-500">P{item.priority}</span>
+                <div className="flex items-center gap-3">
+                  <span className={`font-semibold ${getImpactColor(item.impact)}`}>
+                    {item.impact.toUpperCase()} IMPACT
+                  </span>
+                  <span className="text-slate-500">P{item.priority}</span>
+                  
+                  {/* Task Status */}
+                  {item.task_id && (
+                    <Link 
+                      href="/tasks"
+                      className="flex items-center gap-1 text-green-400 hover:text-green-300 transition-colors"
+                      title="View in Tasks"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span className="text-xs font-medium">Task Created</span>
+                    </Link>
+                  )}
+                </div>
                 
                 {/* Action Buttons */}
                 <div className="flex gap-2">

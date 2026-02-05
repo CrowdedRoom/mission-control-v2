@@ -62,6 +62,7 @@ export default function TasksPage() {
         sessionStorage.removeItem('tasksToCreate')
 
         const createdIds: string[] = []
+        const taskMap: Record<string, string> = {} // audit_id -> task_id
 
         // Create tasks via API
         for (const task of tasksToImport) {
@@ -91,12 +92,22 @@ export default function TasksPage() {
             const created = await res.json()
             createdIds.push(created.id)
             setTasks(prev => [created, ...prev])
+            
+            // Track mapping for audit page
+            if (task.createdFrom) {
+              taskMap[task.createdFrom] = created.id
+            }
           }
         }
 
         if (createdIds.length > 0) {
           setImportedTaskIds(new Set(createdIds))
           setImportBanner({ show: true, count: createdIds.length })
+
+          // Send task IDs back to audit page
+          if (Object.keys(taskMap).length > 0) {
+            sessionStorage.setItem('createdTaskIds', JSON.stringify(taskMap))
+          }
 
           // Refresh activities
           const activityRes = await fetch('/api/activity')
