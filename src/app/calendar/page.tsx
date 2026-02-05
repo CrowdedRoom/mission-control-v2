@@ -85,8 +85,16 @@ export default function CalendarPage() {
 
   const getEventsForDay = (day: Date) => {
     return events.filter(event => {
-      const eventDate = parseISO(event.start)
-      return isSameDay(eventDate, day)
+      const eventStart = parseISO(event.start)
+      const eventEnd = event.end ? parseISO(event.end) : eventStart
+      
+      // Check if day falls between start and end (inclusive)
+      const dayStart = new Date(day)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(day)
+      dayEnd.setHours(23, 59, 59, 999)
+      
+      return eventStart <= dayEnd && eventEnd >= dayStart
     })
   }
 
