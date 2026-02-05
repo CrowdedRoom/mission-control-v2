@@ -11,6 +11,7 @@ import {
   FileText, 
   Users, 
   Settings,
+  Zap,
   Rocket,
   Menu,
   X
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Documents', href: '/docs', icon: FileText },
+  { name: 'Audit', href: '/audit', icon: Zap },
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]

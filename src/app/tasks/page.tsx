@@ -17,7 +17,7 @@ import { TaskCard } from '@/components/TaskCard'
 import { TaskModal } from '@/components/TaskModal'
 import { ActivityFeed } from '@/components/ActivityFeed'
 import { StatsBar } from '@/components/StatsBar'
-import { Plus, RefreshCw } from 'lucide-react'
+import { Plus, RefreshCw, CheckCircle, X } from 'lucide-react'
 
 const COLUMNS = [
   { id: 'backlog', title: 'Backlog', emoji: '📥', color: '#64748b' },
@@ -36,6 +36,8 @@ export default function TasksPage() {
   const [activeDragTask, _setActiveDragTask] = useState<Task | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [lastSync, setLastSync] = useState<Date>(new Date())
+  const [importedTaskIds, setImportedTaskIds] = useState<Set<string>>(new Set())
+  const [importBanner, setImportBanner] = useState<{ show: boolean; count: number }>({ show: false, count: 0 })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -45,6 +47,78 @@ export default function TasksPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  // Check for tasks to import from audit page
+  useEffect(() => {
+    const importTasksFromSession = async () => {
+      const stored = sessionStorage.getItem('tasksToCreate')
+      if (!stored) return
+
+      try {
+        const tasksToImport = JSON.parse(stored)
+        if (!Array.isArray(tasksToImport) || tasksToImport.length === 0) return
+
+        // Clear sessionStorage immediately to prevent duplicate imports
+        sessionStorage.removeItem('tasksToCreate')
+
+        const createdIds: string[] = []
+
+        // Create tasks via API
+        for (const task of tasksToImport) {
+          // Map numeric priority (1, 2, 3) to string priority ('high', 'medium', 'low')
+          const priorityMap: { [key: number]: string } = {
+            1: 'high',
+            2: 'medium',
+            3: 'low'
+          }
+          const mappedPriority = priorityMap[task.priority] || 'medium'
+
+          const res = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: task.title,
+              description: task.description || null,
+              project: task.project,
+              priority: mappedPriority,
+              status: 'backlog', // Map 'todo' to 'backlog'
+              createdFrom: task.createdFrom,
+              created_by: 'dj'
+            })
+          })
+
+          if (res.ok) {
+            const created = await res.json()
+            createdIds.push(created.id)
+            setTasks(prev => [created, ...prev])
+          }
+        }
+
+        if (createdIds.length > 0) {
+          setImportedTaskIds(new Set(createdIds))
+          setImportBanner({ show: true, count: createdIds.length })
+
+          // Refresh activities
+          const activityRes = await fetch('/api/activity')
+          if (activityRes.ok) {
+            setActivities(await activityRes.json())
+          }
+
+          // Clear highlight after 10 seconds
+          setTimeout(() => {
+            setImportedTaskIds(new Set())
+          }, 10000)
+        }
+      } catch (error) {
+        console.error('Failed to import tasks from audit:', error)
+      }
+    }
+
+    // Only run after initial data load
+    if (!isLoading) {
+      importTasksFromSession()
+    }
+  }, [isLoading])
 
   const loadData = async () => {
     setIsLoading(true)

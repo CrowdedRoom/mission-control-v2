@@ -46,7 +46,7 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-200">
                     <span className="font-medium">{actorEmoji} {activity.actor === 'dj' ? 'DJ' : 'Larry'}</span>
-                    {' '}{activity.action}
+                    {' '}{activity.action?.replace(/undefined/g, '').replace(/\s+/g, ' ').trim() || 'unknown action'}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}

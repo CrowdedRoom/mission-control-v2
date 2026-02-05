@@ -29,10 +29,27 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
 
   const project = PROJECTS.find(p => p.id === task.project)
   
+  // Convert numeric priority (1,2,3) to string priority (high,medium,low)
+  const getPriorityString = (priority: string | number): string => {
+    if (typeof priority === 'number') {
+      const numericMap: { [key: number]: string } = { 1: 'high', 2: 'medium', 3: 'low' }
+      return numericMap[priority] || 'medium'
+    }
+    return priority as string
+  }
+  
+  const priorityString = getPriorityString(task.priority)
+  
   const priorityColors = {
     low: 'bg-green-500/20 text-green-400',
     medium: 'bg-yellow-500/20 text-yellow-400',
     high: 'bg-red-500/20 text-red-400'
+  }
+
+  const priorityIndicators = {
+    low: '● Low',
+    medium: '● Medium',
+    high: '● High'
   }
 
   const assigneeEmojis = {
@@ -66,8 +83,8 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
             >
               {project?.emoji} {project?.name}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
-              {task.priority}
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[priorityString]}`}>
+              {priorityIndicators[priorityString]}
             </span>
           </div>
           
