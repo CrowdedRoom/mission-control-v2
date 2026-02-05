@@ -29,8 +29,10 @@ export async function PATCH(
         done: 'completed'
       }
       
+      const actionText = statusLabels[body.status] || `changed status to ${body.status}`
+      
       await logActivity(
-        `${statusLabels[body.status]} "${task.title}"`,
+        `${actionText} "${task.title}"`,
         body.updated_by || 'dj',
         id
       )
