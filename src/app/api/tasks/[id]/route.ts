@@ -52,10 +52,23 @@ export async function DELETE(
   try {
     const { id } = params
 
-    const success = await deleteTask(id)
-    if (!success) {
+    // Get task before deleting for activity logging
+    const task = await getTaskById(id)
+    if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
+
+    const success = await deleteTask(id)
+    if (!success) {
+      return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
+    }
+
+    // Log deletion activity
+    await logActivity(
+      `deleted task "${task.title}"`,
+      'dj',
+      id
+    )
 
     return NextResponse.json({ success: true })
   } catch (error) {
