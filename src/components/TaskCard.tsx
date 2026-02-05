@@ -38,15 +38,15 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
     return priority as string
   }
   
-  const priorityString = getPriorityString(task.priority)
+  const priorityString = getPriorityString(task.priority) as 'low' | 'medium' | 'high'
   
-  const priorityColors = {
+  const priorityColors: Record<'low' | 'medium' | 'high', string> = {
     low: 'bg-green-500/20 text-green-400',
     medium: 'bg-yellow-500/20 text-yellow-400',
     high: 'bg-red-500/20 text-red-400'
   }
 
-  const priorityIndicators = {
+  const priorityIndicators: Record<'low' | 'medium' | 'high', string> = {
     low: '● Low',
     medium: '● Medium',
     high: '● High'

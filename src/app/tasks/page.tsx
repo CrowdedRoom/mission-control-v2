@@ -36,6 +36,7 @@ export default function TasksPage() {
   const [activeDragTask, _setActiveDragTask] = useState<Task | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [lastSync, setLastSync] = useState<Date>(new Date())
+  // TODO: Implement import banner feature to highlight newly imported tasks
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [importedTaskIds, _setImportedTaskIds] = useState<Set<string>>(new Set())
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -103,8 +104,9 @@ export default function TasksPage() {
         }
 
         if (createdIds.length > 0) {
-          setImportedTaskIds(new Set(createdIds))
-          setImportBanner({ show: true, count: createdIds.length })
+          // TODO: Display import banner showing created task count
+          // setImportedTaskIds(new Set(createdIds))
+          // setImportBanner({ show: true, count: createdIds.length })
 
           // Send task IDs back to audit page
           if (Object.keys(taskMap).length > 0) {
@@ -118,9 +120,9 @@ export default function TasksPage() {
           }
 
           // Clear highlight after 10 seconds
-          setTimeout(() => {
-            setImportedTaskIds(new Set())
-          }, 10000)
+          // setTimeout(() => {
+          //   setImportedTaskIds(new Set())
+          // }, 10000)
         }
       } catch (error) {
         console.error('Failed to import tasks from audit:', error)

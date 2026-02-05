@@ -13,7 +13,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
+    }
+    
+    // Validate required fields
+    if (!body.title || body.title.trim() === '') {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
     
     const task = await createTask({
       title: body.title,
