@@ -65,6 +65,14 @@ export default function TasksPage() {
 
         // Create tasks via API
         for (const task of tasksToImport) {
+          // Map numeric priority (1, 2, 3) to string priority ('high', 'medium', 'low')
+          const priorityMap: { [key: number]: string } = {
+            1: 'high',
+            2: 'medium',
+            3: 'low'
+          }
+          const mappedPriority = priorityMap[task.priority] || 'medium'
+
           const res = await fetch('/api/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -72,7 +80,7 @@ export default function TasksPage() {
               title: task.title,
               description: task.description || null,
               project: task.project,
-              priority: task.priority || 'medium',
+              priority: mappedPriority,
               status: 'backlog', // Map 'todo' to 'backlog'
               createdFrom: task.createdFrom,
               created_by: 'dj'
