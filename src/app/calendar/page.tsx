@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Calendar as CalendarIcon, Trash2, Edit2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Calendar as CalendarIcon, Trash2 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isToday } from 'date-fns'
 
 type CalendarEvent = {
@@ -52,7 +52,7 @@ export default function CalendarPage() {
     end: '',
     all_day: false,
     location: '',
-    category: 'other' as const,
+    category: 'other' as 'family' | 'work' | 'personal' | 'health' | 'social' | 'other',
     color: '#3b82f6'
   })
 
@@ -427,7 +427,7 @@ export default function CalendarPage() {
                 <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value as 'family' | 'work' | 'personal' | 'health' | 'social' | 'other' })}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(categoryLabels).map(([key, label]) => (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, Folder, Search, Plus, Clock, User, Pin, Trash2, X, Save, ArrowLeft, Edit2, FolderPlus } from 'lucide-react'
+import { FileText, Folder, Search, Plus, Clock, User, Pin, Trash2, X, Save, ArrowLeft, Edit2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
 type Document = {
@@ -62,7 +62,8 @@ export default function DocsPage() {
     try {
       const res = await fetch('/api/documents?folders=true')
       const data = await res.json()
-      const allFolders = ['All', ...new Set([...DEFAULT_FOLDERS.slice(1), ...data])]
+      const uniqueFolders = Array.from(new Set([...DEFAULT_FOLDERS.slice(1), ...data]))
+      const allFolders = ['All', ...uniqueFolders]
       setFolders(allFolders)
     } catch (error) {
       console.error('Failed to fetch folders:', error)

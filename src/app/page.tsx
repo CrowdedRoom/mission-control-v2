@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Task, Activity, PROJECTS } from '@/lib/types'
 import { ActivityFeed } from '@/components/ActivityFeed'
+import { SmartDashboard } from '@/components/SmartDashboard'
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -77,6 +78,13 @@ export default function Dashboard() {
         <h1 className="text-2xl md:text-3xl font-bold text-slate-100 mb-1 md:mb-2">Dashboard</h1>
         <p className="text-sm md:text-base text-slate-400">Welcome back! Here&apos;s what&apos;s happening today.</p>
       </div>
+
+      {/* Smart Dashboard */}
+      {tasks.length > 0 && (
+        <div className="mb-6 md:mb-8">
+          <SmartDashboard tasks={tasks} />
+        </div>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
