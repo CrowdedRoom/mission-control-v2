@@ -56,6 +56,16 @@ export default function CalendarPage() {
     color: '#3b82f6'
   })
 
+  // Helper: Format date for datetime-local input (YYYY-MM-DDTHH:mm in local time)
+  const formatForInput = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
   // Calculate calendar grid
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -100,11 +110,11 @@ export default function CalendarPage() {
 
   const openNewEventModal = (date?: Date) => {
     const targetDate = date || selectedDate || new Date()
-    const dateStr = format(targetDate, "yyyy-MM-dd'T'HH:mm")
+    
     setFormData({
       title: '',
       description: '',
-      start: dateStr,
+      start: formatForInput(targetDate),
       end: '',
       all_day: false,
       location: '',
@@ -116,11 +126,15 @@ export default function CalendarPage() {
   }
 
   const openEditEventModal = (event: CalendarEvent) => {
+    // Convert ISO strings to local datetime for input fields
+    const startDate = new Date(event.start)
+    const endDate = event.end ? new Date(event.end) : null
+    
     setFormData({
       title: event.title,
       description: event.description || '',
-      start: event.start.slice(0, 16),
-      end: event.end?.slice(0, 16) || '',
+      start: formatForInput(startDate),
+      end: endDate ? formatForInput(endDate) : '',
       all_day: event.all_day,
       location: event.location || '',
       category: event.category,
@@ -133,11 +147,13 @@ export default function CalendarPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Keep datetime as entered (no timezone conversion)
+    // datetime-local gives us "YYYY-MM-DDTHH:mm", add seconds for consistency
     const eventData = {
       title: formData.title,
       description: formData.description || null,
-      start: new Date(formData.start).toISOString(),
-      end: formData.end ? new Date(formData.end).toISOString() : null,
+      start: formData.start + ':00',
+      end: formData.end ? formData.end + ':00' : null,
       all_day: formData.all_day,
       location: formData.location || null,
       category: formData.category,
