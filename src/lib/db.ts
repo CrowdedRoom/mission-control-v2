@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs'
 import { join } from 'path'
-import { Task, Activity, CalendarEvent, Document } from './types'
+import { Task, Activity, CalendarEvent, Document, Project } from './types'
 
 const DB_PATH = join(process.cwd(), 'data', 'db.json')
 
@@ -9,13 +9,15 @@ type Database = {
   activity: Activity[]
   events: CalendarEvent[]
   documents: Document[]
+  projects: Project[]
 }
 
 const defaultDb: Database = {
   tasks: [],
   activity: [],
   events: [],
-  documents: []
+  documents: [],
+  projects: []
 }
 
 async function ensureDb(): Promise<void> {
@@ -256,4 +258,36 @@ export async function getFolders(): Promise<string[]> {
   const docs = await getDocuments()
   const folders = new Set(docs.map(d => d.folder))
   return Array.from(folders).sort()
+}
+
+// ============================================================================
+// Projects
+// ============================================================================
+
+export async function getProjects(): Promise<Project[]> {
+  const db = await readDb()
+  if (!db.projects) db.projects = []
+  return db.projects.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
+  const db = await readDb()
+  if (!db.projects) db.projects = []
+  
+  const newProject: Project = {
+    id: generateProjectId(project.name),
+    ...project
+  }
+  
+  db.projects.push(newProject)
+  await writeDb(db)
+  return newProject
+}
+
+function generateProjectId(name: string): string {
+  // Generate a URL-friendly ID from the project name
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }

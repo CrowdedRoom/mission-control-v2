@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Task, PROJECTS } from '@/lib/types'
+import { Task, Project, PROJECTS } from '@/lib/types'
 import { X } from 'lucide-react'
 
 interface TaskModalProps {
@@ -10,9 +10,12 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void
   task?: Task | null
   defaultStatus?: string
+  projects?: Project[]
 }
 
-export function TaskModal({ isOpen, onClose, onSave, task, defaultStatus = 'backlog' }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSave, task, defaultStatus = 'backlog', projects }: TaskModalProps) {
+  // Use provided projects or fall back to default PROJECTS
+  const availableProjects = projects && projects.length > 0 ? projects : PROJECTS
   const [formData, setFormData] = useState<Partial<Task>>({
     title: '',
     description: '',
@@ -98,7 +101,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, defaultStatus = 'back
                 onChange={e => setFormData({ ...formData, project: e.target.value })}
                 className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500"
               >
-                {PROJECTS.map(project => (
+                {availableProjects.map(project => (
                   <option key={project.id} value={project.id}>
                     {project.emoji} {project.name}
                   </option>

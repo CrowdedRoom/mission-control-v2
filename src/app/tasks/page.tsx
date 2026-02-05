@@ -11,13 +11,14 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core'
-import { Task, Activity } from '@/lib/types'
+import { Task, Activity, Project } from '@/lib/types'
 import { KanbanColumn } from '@/components/KanbanColumn'
 import { TaskCard } from '@/components/TaskCard'
 import { TaskModal } from '@/components/TaskModal'
 import { ActivityFeed } from '@/components/ActivityFeed'
 import { StatsBar } from '@/components/StatsBar'
-import { Plus, RefreshCw } from 'lucide-react'
+import { NewProjectModal } from '@/components/NewProjectModal'
+import { Plus, RefreshCw, FolderPlus } from 'lucide-react'
 
 const COLUMNS = [
   { id: 'backlog', title: 'Backlog', emoji: '📥', color: '#64748b' },
@@ -29,7 +30,9 @@ const COLUMNS = [
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [activeColumn, setActiveColumn] = useState<string>('backlog')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -138,9 +141,10 @@ export default function TasksPage() {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [tasksRes, activityRes] = await Promise.all([
+      const [tasksRes, activityRes, projectsRes] = await Promise.all([
         fetch('/api/tasks'),
-        fetch('/api/activity')
+        fetch('/api/activity'),
+        fetch('/api/projects')
       ])
       
       if (tasksRes.ok) {
@@ -151,6 +155,11 @@ export default function TasksPage() {
       if (activityRes.ok) {
         const activityData = await activityRes.json()
         setActivities(activityData)
+      }
+
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json()
+        setProjects(projectsData)
       }
       
       setLastSync(new Date())
@@ -319,6 +328,13 @@ export default function TasksPage() {
           <Plus size={18} />
           New Task
         </button>
+        <button
+          onClick={() => setIsProjectModalOpen(true)}
+          className="flex items-center gap-2 px-3 md:px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors text-sm md:text-base"
+        >
+          <FolderPlus size={18} />
+          New Project
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -363,14 +379,22 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTask}
         task={editingTask}
         defaultStatus={activeColumn}
+        projects={projects}
       />
+
+      {isProjectModalOpen && (
+        <NewProjectModal
+          onClose={() => setIsProjectModalOpen(false)}
+          onProjectCreated={loadData}
+        />
+      )}
     </div>
   )
 }
