@@ -38,15 +38,15 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100 mb-2">Projects</h1>
-        <p className="text-slate-400">Overview of all our active work streams.</p>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-100 mb-1 md:mb-2">Projects</h1>
+        <p className="text-sm md:text-base text-slate-400">Overview of all our active work streams.</p>
       </div>
 
       {/* Project Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {PROJECTS.map(project => {
           const stats = getProjectStats(project.id)
           const progress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0

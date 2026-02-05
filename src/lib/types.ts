@@ -18,6 +18,34 @@ export type Activity = {
   timestamp: string
 }
 
+export type CalendarEvent = {
+  id: string
+  title: string
+  description: string | null
+  start: string // ISO datetime
+  end: string | null // ISO datetime (null = all day or no end time)
+  all_day: boolean
+  location: string | null
+  color: string // hex color for display
+  category: 'family' | 'work' | 'personal' | 'health' | 'social' | 'other'
+  recurring: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+  reminder: number | null // minutes before event
+  created_at: string
+  updated_at: string
+}
+
+export type Document = {
+  id: string
+  title: string
+  content: string // Markdown content
+  folder: string
+  author: 'dj' | 'larry'
+  pinned: boolean
+  tags: string[]
+  created_at: string
+  updated_at: string
+}
+
 export type Project = {
   id: string
   name: string

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Task, Activity, PROJECTS } from '@/lib/types'
 import { ActivityFeed } from '@/components/ActivityFeed'
+import { SmartDashboard } from '@/components/SmartDashboard'
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -71,15 +72,22 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100 mb-2">Dashboard</h1>
-        <p className="text-slate-400">Welcome back! Here&apos;s what&apos;s happening today.</p>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-100 mb-1 md:mb-2">Dashboard</h1>
+        <p className="text-sm md:text-base text-slate-400">Welcome back! Here&apos;s what&apos;s happening today.</p>
       </div>
 
+      {/* Smart Dashboard */}
+      {tasks.length > 0 && (
+        <div className="mb-6 md:mb-8">
+          <SmartDashboard tasks={tasks} />
+        </div>
+      )}
+
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
         <StatCard
           label="Total Tasks"
           value={stats.total}
@@ -115,9 +123,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* High Priority Tasks */}
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
             <div className="flex items-center justify-between mb-4">
@@ -163,7 +171,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Quick Links */}
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Quick Links</h2>
@@ -243,13 +251,13 @@ function StatCard({
 }) {
   return (
     <Link href={href}>
-      <div className={`${bgColor} rounded-xl p-4 border border-slate-700 flex items-center gap-3 hover:border-slate-600 transition-colors`}>
-        <div className={`w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center ${color}`}>
+      <div className={`${bgColor} rounded-xl p-3 md:p-4 border border-slate-700 flex items-center gap-2 md:gap-3 hover:border-slate-600 transition-colors`}>
+        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg bg-slate-800 flex items-center justify-center ${color}`}>
           {icon}
         </div>
         <div>
-          <p className="text-2xl font-bold text-slate-100">{value}</p>
-          <p className="text-xs text-slate-400">{label}</p>
+          <p className="text-xl md:text-2xl font-bold text-slate-100">{value}</p>
+          <p className="text-[10px] md:text-xs text-slate-400">{label}</p>
         </div>
       </div>
     </Link>

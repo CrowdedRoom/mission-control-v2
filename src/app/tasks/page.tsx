@@ -185,16 +185,16 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       {/* Header */}
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Tasks</h1>
-          <p className="text-sm text-slate-400">Track and manage everything we need to do</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-100">Tasks</h1>
+          <p className="text-xs md:text-sm text-slate-400">Track and manage everything we need to do</p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400">
+        <div className="flex items-center gap-3 md:gap-4">
+          <span className="text-xs md:text-sm text-slate-400 hidden sm:inline">
             Last synced: {lastSync.toLocaleTimeString()}
           </span>
           <button
@@ -211,25 +211,25 @@ export default function TasksPage() {
       <StatsBar tasks={tasks} />
 
       {/* Quick Actions */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-4 md:mb-6">
         <button
           onClick={() => openAddModal('backlog')}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
+          className="flex items-center gap-2 px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors text-sm md:text-base"
         >
           <Plus size={18} />
           New Task
         </button>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Kanban Board */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-auto">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 min-w-[600px] lg:min-w-0">
               {COLUMNS.map(column => (
                 <KanbanColumn
                   key={column.id}
@@ -257,8 +257,8 @@ export default function TasksPage() {
           </DndContext>
         </div>
 
-        {/* Activity Feed */}
-        <div className="w-80">
+        {/* Activity Feed - Hidden on mobile */}
+        <div className="hidden lg:block w-80 flex-shrink-0">
           <ActivityFeed activities={activities} />
         </div>
       </div>
