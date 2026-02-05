@@ -163,8 +163,19 @@ export default function TasksPage() {
     if (!over) return
 
     const taskId = active.id as string
-    const newStatus = over.id as Task['status']
-    
+    const validColumns = COLUMNS.map(c => c.id)
+    const overId = over.id as string
+    let newStatus: Task['status']
+
+    if (validColumns.includes(overId)) {
+      newStatus = overId as Task['status']
+    } else {
+      // Dropped on a task — use that task's status
+      const overTask = tasks.find(t => t.id === overId)
+      if (!overTask) return
+      newStatus = overTask.status
+    }
+
     const task = tasks.find(t => t.id === taskId)
     if (!task || task.status === newStatus) return
 
