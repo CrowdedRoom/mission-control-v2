@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { FileText, Folder, Search, Plus, Clock, User, Pin, Trash2, X, Save, ArrowLeft, Edit2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { FileText, Folder, Search, Plus, Clock, User, Pin, Trash2, X, Save, ArrowLeft, Edit2, RefreshCw, Database, HardDrive } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
 type Document = {
@@ -14,6 +14,7 @@ type Document = {
   tags: string[]
   created_at: string
   updated_at: string
+  source?: 'db' | 'file'
 }
 
 const DEFAULT_FOLDERS = ['All', 'Getting Started', 'Planning', 'Family', 'Development', 'Notes', 'Projects']
@@ -24,6 +25,7 @@ export default function DocsPage() {
   const [selectedFolder, setSelectedFolder] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showNewDocModal, setShowNewDocModal] = useState(false)
@@ -35,40 +37,71 @@ export default function DocsPage() {
     tags: ''
   })
 
-  useEffect(() => {
-    fetchDocuments()
-    fetchFolders()
-  }, [selectedFolder, searchQuery])
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
-      let url = '/api/documents'
       const params = new URLSearchParams()
       if (searchQuery) params.append('q', searchQuery)
       else if (selectedFolder !== 'All') params.append('folder', selectedFolder)
-      if (params.toString()) url += `?${params}`
-      
-      const res = await fetch(url)
-      const data = await res.json()
-      setDocuments(data)
+      const qs = params.toString() ? `?${params}` : ''
+
+      // Fetch DB docs and file docs in parallel
+      const [dbRes, fileRes] = await Promise.all([
+        fetch(`/api/documents${qs}`),
+        fetch(`/api/markdown-files${qs}`)
+      ])
+
+      const dbDocs: Document[] = await dbRes.json()
+      const fileDocs: Document[] = await fileRes.json().catch(() => [])
+
+      // Tag each source
+      const taggedDb = dbDocs.map(d => ({ ...d, source: 'db' as const }))
+      const taggedFiles = fileDocs.map(d => ({ ...d, source: 'file' as const }))
+
+      // Merge: pinned DB docs first, then all by updated_at
+      const merged = [...taggedDb, ...taggedFiles].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1
+        if (!a.pinned && b.pinned) return 1
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      })
+
+      setDocuments(merged)
     } catch (error) {
       console.error('Failed to fetch documents:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
-  }
+  }, [searchQuery, selectedFolder])
 
-  const fetchFolders = async () => {
+  const fetchFolders = useCallback(async () => {
     try {
-      const res = await fetch('/api/documents?folders=true')
-      const data = await res.json()
-      const uniqueFolders = Array.from(new Set([...DEFAULT_FOLDERS.slice(1), ...data]))
-      const allFolders = ['All', ...uniqueFolders]
-      setFolders(allFolders)
+      const [dbRes, fileRes] = await Promise.all([
+        fetch('/api/documents?folders=true'),
+        fetch('/api/markdown-files?folders=true')
+      ])
+
+      const dbFolders: string[] = await dbRes.json()
+      const fileFolders: string[] = await fileRes.json().catch(() => [])
+
+      const uniqueFolders = Array.from(new Set([...DEFAULT_FOLDERS.slice(1), ...dbFolders, ...fileFolders]))
+      setFolders(['All', ...uniqueFolders.sort()])
     } catch (error) {
       console.error('Failed to fetch folders:', error)
     }
+  }, [])
+
+  useEffect(() => {
+    fetchDocuments()
+    fetchFolders()
+  }, [fetchDocuments, fetchFolders])
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    fetchDocuments()
+    fetchFolders()
   }
+
+  const isFileDoc = (doc: Document) => doc.source === 'file'
 
   const openDocument = (doc: Document) => {
     setSelectedDoc(doc)
@@ -102,7 +135,7 @@ export default function DocsPage() {
         })
       })
       const updatedDoc = await res.json()
-      setSelectedDoc(updatedDoc)
+      setSelectedDoc({ ...updatedDoc, source: 'db' })
       setIsEditing(false)
       fetchDocuments()
       fetchFolders()
@@ -125,7 +158,7 @@ export default function DocsPage() {
 
   const createDocument = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       const res = await fetch('/api/documents', {
         method: 'POST',
@@ -144,7 +177,7 @@ export default function DocsPage() {
       setEditForm({ title: '', content: '', folder: '', pinned: false, tags: '' })
       fetchDocuments()
       fetchFolders()
-      openDocument(newDoc)
+      openDocument({ ...newDoc, source: 'db' })
     } catch (error) {
       console.error('Failed to create document:', error)
     }
@@ -155,8 +188,27 @@ export default function DocsPage() {
     setShowNewDocModal(true)
   }
 
+  const SourceBadge = ({ source }: { source?: 'db' | 'file' }) => {
+    if (source === 'file') {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-emerald-500/15 text-emerald-400 rounded">
+          <HardDrive size={10} />
+          File
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/15 text-blue-400 rounded">
+        <Database size={10} />
+        DB
+      </span>
+    )
+  }
+
   // Document viewer/editor
   if (selectedDoc) {
+    const readOnly = isFileDoc(selectedDoc)
+
     return (
       <div className="p-4 md:p-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
@@ -168,7 +220,11 @@ export default function DocsPage() {
             Back to Documents
           </button>
           <div className="flex items-center gap-2">
-            {isEditing ? (
+            {readOnly ? (
+              <span className="px-3 py-1.5 text-xs text-slate-400 bg-slate-700/50 rounded-lg">
+                Read-only (filesystem)
+              </span>
+            ) : isEditing ? (
               <>
                 <button
                   onClick={() => setIsEditing(false)}
@@ -260,6 +316,7 @@ export default function DocsPage() {
                   <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
                     {selectedDoc.pinned && <Pin size={18} className="text-yellow-500" />}
                     {selectedDoc.title}
+                    <SourceBadge source={selectedDoc.source} />
                   </h1>
                   <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
                     <span className="flex items-center gap-1">
@@ -313,13 +370,24 @@ export default function DocsPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-slate-100 mb-1 md:mb-2">Documents</h1>
           <p className="text-sm md:text-base text-slate-400">Shared knowledge and documentation.</p>
         </div>
-        <button 
-          onClick={openNewDocModal}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors w-full sm:w-auto"
-        >
-          <Plus size={18} />
-          New Document
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors disabled:opacity-50"
+            title="Refresh documents"
+          >
+            <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+            <span className="sm:hidden">Refresh</span>
+          </button>
+          <button
+            onClick={openNewDocModal}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors flex-1 sm:flex-none"
+          >
+            <Plus size={18} />
+            New Document
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -356,9 +424,10 @@ export default function DocsPage() {
         {/* Desktop Header */}
         <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-slate-700 text-sm font-medium text-slate-400">
           <div className="col-span-5">Name</div>
-          <div className="col-span-3">Folder</div>
+          <div className="col-span-2">Folder</div>
           <div className="col-span-2">Last Edited</div>
           <div className="col-span-2">Author</div>
+          <div className="col-span-1">Source</div>
         </div>
 
         {loading ? (
@@ -376,7 +445,7 @@ export default function DocsPage() {
           </div>
         ) : (
           documents.map(doc => (
-            <div 
+            <div
               key={doc.id}
               onClick={() => openDocument(doc)}
               className="p-4 border-b border-slate-700/50 hover:bg-slate-700/50 transition-colors cursor-pointer"
@@ -385,9 +454,12 @@ export default function DocsPage() {
               <div className="md:hidden">
                 <div className="flex items-start gap-3">
                   {doc.pinned && <Pin size={14} className="text-yellow-500 flex-shrink-0 mt-1" />}
-                  <FileText size={18} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                  <FileText size={18} className={`flex-shrink-0 mt-0.5 ${doc.source === 'file' ? 'text-emerald-400' : 'text-blue-400'}`} />
                   <div className="flex-1 min-w-0">
-                    <span className="text-slate-200 font-medium block truncate">{doc.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-200 font-medium truncate">{doc.title}</span>
+                      <SourceBadge source={doc.source} />
+                    </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
                       <span className="flex items-center gap-1">
                         <Folder size={12} />
@@ -405,10 +477,10 @@ export default function DocsPage() {
               <div className="hidden md:grid grid-cols-12 gap-4">
                 <div className="col-span-5 flex items-center gap-3">
                   {doc.pinned && <Pin size={14} className="text-yellow-500 flex-shrink-0" />}
-                  <FileText size={18} className="text-blue-400 flex-shrink-0" />
+                  <FileText size={18} className={`flex-shrink-0 ${doc.source === 'file' ? 'text-emerald-400' : 'text-blue-400'}`} />
                   <span className="text-slate-200 font-medium truncate">{doc.title}</span>
                 </div>
-                <div className="col-span-3 flex items-center gap-2 text-slate-400">
+                <div className="col-span-2 flex items-center gap-2 text-slate-400">
                   <Folder size={14} />
                   {doc.folder}
                 </div>
@@ -419,6 +491,9 @@ export default function DocsPage() {
                 <div className="col-span-2 flex items-center gap-2 text-slate-400 text-sm">
                   <User size={14} />
                   {doc.author}
+                </div>
+                <div className="col-span-1 flex items-center">
+                  <SourceBadge source={doc.source} />
                 </div>
               </div>
             </div>
@@ -439,7 +514,7 @@ export default function DocsPage() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={createDocument} className="p-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Title</label>

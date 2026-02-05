@@ -65,10 +65,10 @@ export function Navigation() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Overlay - positioned to not overlap sidebar */}
       {isOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 z-40 bg-black/50"
+        <div
+          className="lg:hidden fixed inset-y-0 left-64 right-0 z-40 bg-black/50"
           onClick={() => setIsOpen(false)}
         />
       )}
