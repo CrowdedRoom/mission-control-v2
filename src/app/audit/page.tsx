@@ -6,10 +6,8 @@ import { useRouter } from 'next/navigation'
 import { 
   AlertCircle, 
   Zap, 
-  Bug, 
   TrendingUp,
   ChevronRight,
-  Filter,
   CheckCircle2,
   Edit2,
   X,
@@ -424,7 +422,7 @@ export default function AuditPage() {
             <label className="text-sm text-slate-400 block mb-2">Category</label>
             <select 
               value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
+              onChange={(e) => setFilter(e.target.value as 'all' | AuditItem['category'])}
               className="px-3 py-2 border border-slate-600 bg-slate-800 text-slate-100 rounded-lg text-sm hover:border-slate-500 transition-colors"
             >
               <option value="all">All Categories</option>
@@ -533,7 +531,7 @@ export default function AuditPage() {
               {editingId === item.id ? (
                 <select
                   value={editData.status || 'backlog'}
-                  onChange={(e) => setEditData({ ...editData, status: e.target.value as any })}
+                  onChange={(e) => setEditData({ ...editData, status: e.target.value as AuditItem['status'] })}
                   className="w-full px-2 py-1 bg-slate-700 border border-slate-600 text-slate-100 rounded text-sm mb-4"
                 >
                   <option value="backlog">Backlog</option>

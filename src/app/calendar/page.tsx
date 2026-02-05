@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Calendar as CalendarIcon, Trash2 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isToday } from 'date-fns'
 
@@ -75,11 +75,7 @@ export default function CalendarPage() {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const weekDaysMobile = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
-  useEffect(() => {
-    fetchEvents()
-  }, [currentDate])
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const start = startOfWeek(startOfMonth(currentDate))
       const end = endOfWeek(endOfMonth(currentDate))
@@ -91,7 +87,11 @@ export default function CalendarPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentDate])
+
+  useEffect(() => {
+    fetchEvents()
+  }, [fetchEvents])
 
   const getEventsForDay = (day: Date) => {
     return events.filter(event => {

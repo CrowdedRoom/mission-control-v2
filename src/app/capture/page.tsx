@@ -71,24 +71,24 @@ export default function CapturePage() {
             <h1 className="text-3xl font-bold text-slate-100">Brain Dump</h1>
           </div>
           <p className="text-slate-400">
-            Pour out your thoughts. I'll sort them into tasks, events, and notes.
+            Pour out your thoughts. I&apos;ll sort them into tasks, events, and notes.
           </p>
         </div>
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-6">
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            What's on your mind?
+            What&apos;s on your mind?
           </label>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Just type whatever... I'll figure it out.
+            placeholder="Just type whatever... I&apos;ll figure it out.
 
 Examples:
 - Need to call dentist tomorrow at 2pm
 - Task: Review pottery app designs
-- Remember: Teresa's birthday is March 15th
+- Remember: Teresa&apos;s birthday is March 15th
 - Idea for new feature: drag and drop file uploads"
             className="w-full bg-slate-900 border border-slate-600 rounded-lg p-4 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
             rows={12}
@@ -163,10 +163,10 @@ Examples:
         <div className="mt-8 p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
           <h3 className="text-sm font-medium text-slate-300 mb-2">💡 Tips</h3>
           <ul className="text-sm text-slate-400 space-y-1">
-            <li>• Start lines with "task:" or "todo:" for action items</li>
+            <li>• Start lines with &quot;task:&quot; or &quot;todo:&quot; for action items</li>
             <li>• Include dates/times for calendar events</li>
             <li>• Everything else becomes a note in your Second Brain</li>
-            <li>• Just type naturally — I'll figure it out</li>
+            <li>• Just type naturally — I&apos;ll figure it out</li>
           </ul>
         </div>
       </div>

@@ -17,7 +17,7 @@ import { TaskCard } from '@/components/TaskCard'
 import { TaskModal } from '@/components/TaskModal'
 import { ActivityFeed } from '@/components/ActivityFeed'
 import { StatsBar } from '@/components/StatsBar'
-import { Plus, RefreshCw, CheckCircle, X } from 'lucide-react'
+import { Plus, RefreshCw } from 'lucide-react'
 
 const COLUMNS = [
   { id: 'backlog', title: 'Backlog', emoji: '📥', color: '#64748b' },
@@ -36,8 +36,10 @@ export default function TasksPage() {
   const [activeDragTask, _setActiveDragTask] = useState<Task | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [lastSync, setLastSync] = useState<Date>(new Date())
-  const [importedTaskIds, setImportedTaskIds] = useState<Set<string>>(new Set())
-  const [importBanner, setImportBanner] = useState<{ show: boolean; count: number }>({ show: false, count: 0 })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [importedTaskIds, _setImportedTaskIds] = useState<Set<string>>(new Set())
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [importBanner, _setImportBanner] = useState<{ show: boolean; count: number }>({ show: false, count: 0 })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

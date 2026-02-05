@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Task, PROJECTS } from '@/lib/types'
 import { TrendingUp, AlertCircle, Zap, Clock } from 'lucide-react'
 import { subDays, isAfter, parseISO } from 'date-fns'
@@ -27,12 +27,7 @@ export function SmartDashboard({ tasks }: SmartDashboardProps) {
   const [projectHealth, setProjectHealth] = useState<ProjectHealth[]>([])
   const [recommendations, setRecommendations] = useState<string[]>([])
 
-  useEffect(() => {
-    calculateVelocity()
-    calculateProjectHealth()
-  }, [tasks])
-
-  const calculateVelocity = () => {
+  const calculateVelocity = useCallback(() => {
     const now = new Date()
     const weekAgo = subDays(now, 7)
     const twoWeeksAgo = subDays(now, 14)
@@ -50,9 +45,9 @@ export function SmartDashboard({ tasks }: SmartDashboardProps) {
     const trend = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 0
 
     setVelocity({ thisWeek, lastWeek, trend })
-  }
+  }, [tasks])
 
-  const calculateProjectHealth = () => {
+  const calculateProjectHealth = useCallback(() => {
     // Group tasks by project
     const projects: { [key: string]: Task[] } = {}
     tasks.forEach(task => {
@@ -136,7 +131,12 @@ export function SmartDashboard({ tasks }: SmartDashboardProps) {
     }
 
     setRecommendations(recs)
-  }
+  }, [tasks, velocity.trend])
+
+  useEffect(() => {
+    calculateVelocity()
+    calculateProjectHealth()
+  }, [calculateVelocity, calculateProjectHealth])
 
   return (
     <div className="space-y-6">

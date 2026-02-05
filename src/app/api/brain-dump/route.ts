@@ -220,7 +220,7 @@ export async function POST(request: Request) {
             details: 'Saved to Second Brain',
             status: 'success'
           })
-        } catch (error) {
+        } catch {
           processed.push({
             type: 'note',
             title: trimmed,
