@@ -8,6 +8,7 @@ export type Task = {
   priority: 'low' | 'medium' | 'high'
   created_at: string
   updated_at: string
+  createdFrom?: string // Source identifier (e.g., audit item ID)
 }
 
 export type Activity = {
