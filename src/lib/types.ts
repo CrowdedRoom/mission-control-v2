@@ -40,7 +40,7 @@ export type Document = {
   title: string
   content: string // Markdown content
   folder: string
-  author: 'dj' | 'larry'
+  author: 'dj' | 'larry' | 'system'
   pinned: boolean
   tags: string[]
   created_at: string

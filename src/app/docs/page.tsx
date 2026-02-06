@@ -3,13 +3,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FileText, Folder, Search, Plus, Clock, User, Pin, Trash2, X, Save, ArrowLeft, Edit2, RefreshCw, Database, HardDrive } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeSanitize from 'rehype-sanitize'
 
 type Document = {
   id: string
   title: string
   content: string
   folder: string
-  author: 'dj' | 'larry'
+  author: 'dj' | 'larry' | 'system'
   pinned: boolean
   tags: string[]
   created_at: string
@@ -26,6 +29,7 @@ export default function DocsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showNewDocModal, setShowNewDocModal] = useState(false)
@@ -99,6 +103,27 @@ export default function DocsPage() {
     setRefreshing(true)
     fetchDocuments()
     fetchFolders()
+  }
+
+  const handleSync = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/documents/sync', { method: 'POST' })
+      const data = await res.json()
+      
+      if (data.success) {
+        alert(data.message)
+        fetchDocuments()
+        fetchFolders()
+      } else {
+        alert(`Sync failed: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Sync failed:', error)
+      alert('Sync failed. Check console for details.')
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const isFileDoc = (doc: Document) => doc.source === 'file'
@@ -344,11 +369,55 @@ export default function DocsPage() {
                 </div>
               </div>
               <div className="border-t border-slate-700 pt-6">
-                <div className="prose prose-invert max-w-none">
+                <div className="prose prose-invert prose-slate max-w-none">
                   {selectedDoc.content ? (
-                    <pre className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed">
+                    <div className="text-slate-300 leading-relaxed markdown-content">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeSanitize]}
+                      components={{
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mt-8 mb-4 text-slate-100">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-bold mt-6 mb-3 text-slate-100">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-bold mt-4 mb-2 text-slate-200">{children}</h3>,
+                        h4: ({ children }) => <h4 className="text-base font-semibold mt-3 mb-2 text-slate-200">{children}</h4>,
+                        p: ({ children }) => <p className="mb-4 text-slate-300">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-4 space-y-1 text-slate-300">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-4 space-y-1 text-slate-300">{children}</ol>,
+                        li: ({ children }) => <li className="ml-2">{children}</li>,
+                        a: ({ href, children }) => (
+                          <a href={href} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                            {children}
+                          </a>
+                        ),
+                        code: ({ className, children }) => {
+                          const isInline = !className
+                          return isInline ? (
+                            <code className="bg-slate-700 px-1.5 py-0.5 rounded text-sm font-mono text-slate-200">{children}</code>
+                          ) : (
+                            <code className={`${className} text-sm`}>{children}</code>
+                          )
+                        },
+                        pre: ({ children }) => (
+                          <pre className="bg-slate-900 p-4 rounded-lg my-4 overflow-x-auto border border-slate-700">{children}</pre>
+                        ),
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-slate-600 pl-4 my-4 italic text-slate-400">{children}</blockquote>
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-4">
+                            <table className="min-w-full border border-slate-700 rounded-lg">{children}</table>
+                          </div>
+                        ),
+                        th: ({ children }) => <th className="bg-slate-700 px-4 py-2 text-left font-semibold text-slate-200 border-b border-slate-600">{children}</th>,
+                        td: ({ children }) => <td className="px-4 py-2 border-b border-slate-700 text-slate-300">{children}</td>,
+                        hr: () => <hr className="my-6 border-slate-700" />,
+                        strong: ({ children }) => <strong className="font-semibold text-slate-100">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                      }}
+                    >
                       {selectedDoc.content}
-                    </pre>
+                    </ReactMarkdown>
+                    </div>
                   ) : (
                     <p className="text-slate-500 italic">No content yet. Click Edit to add content.</p>
                   )}
@@ -371,6 +440,15 @@ export default function DocsPage() {
           <p className="text-sm md:text-base text-slate-400">Shared knowledge and documentation.</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-medium transition-colors disabled:opacity-50"
+            title="Sync files from workspace and Second Brain"
+          >
+            <HardDrive size={18} className={syncing ? 'animate-pulse' : ''} />
+            <span className="hidden md:inline">Sync</span>
+          </button>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
