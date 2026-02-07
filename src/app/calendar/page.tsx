@@ -55,6 +55,7 @@ export default function CalendarPage() {
     category: 'other' as 'family' | 'work' | 'personal' | 'health' | 'social' | 'other',
     color: '#3b82f6'
   })
+  const [dayDetailDate, setDayDetailDate] = useState<Date | null>(null)
 
   // Helper: Format date for datetime-local input (YYYY-MM-DDTHH:mm in local time)
   const formatForInput = (date: Date) => {
@@ -274,6 +275,8 @@ export default function CalendarPage() {
                     setSelectedDate(day)
                     if (dayEvents.length === 0) {
                       openNewEventModal(day)
+                    } else {
+                      setDayDetailDate(day)
                     }
                   }}
                   className={`min-h-[70px] md:min-h-[100px] p-1 md:p-2 border-b border-r border-slate-700/50 hover:bg-slate-700/50 transition-colors flex flex-col items-start ${
@@ -301,8 +304,14 @@ export default function CalendarPage() {
                       </div>
                     ))}
                     {dayEvents.length > maxEvents && (
-                      <div className="text-[10px] md:text-xs text-slate-400 pl-0.5 md:pl-1">
-                        +{dayEvents.length - maxEvents}
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDayDetailDate(day)
+                        }}
+                        className="text-[10px] md:text-xs text-blue-400 pl-0.5 md:pl-1 hover:text-blue-300 cursor-pointer hover:underline"
+                      >
+                        +{dayEvents.length - maxEvents} more
                       </div>
                     )}
                   </div>
@@ -373,6 +382,79 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      {/* Day Detail Modal */}
+      {dayDetailDate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl w-full max-w-md border border-slate-700 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-100">
+                {format(dayDetailDate, 'EEEE, MMMM d, yyyy')}
+              </h3>
+              <button
+                onClick={() => setDayDetailDate(null)}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-2 overflow-y-auto flex-1">
+              {getEventsForDay(dayDetailDate).length === 0 ? (
+                <p className="text-slate-400 text-center py-4">No events on this day</p>
+              ) : (
+                getEventsForDay(dayDetailDate).map(event => (
+                  <div
+                    key={event.id}
+                    onClick={() => {
+                      setDayDetailDate(null)
+                      openEditEventModal(event)
+                    }}
+                    className="p-3 bg-slate-700/50 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div 
+                        className="w-1 h-full rounded-full self-stretch min-h-[40px]"
+                        style={{ backgroundColor: event.color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-200">{event.title}</p>
+                        <p className="text-sm text-slate-400 flex items-center gap-1 mt-1">
+                          <Clock size={12} />
+                          {format(parseISO(event.start), event.all_day ? 'All day' : 'h:mm a')}
+                          {event.end && !event.all_day && ` - ${format(parseISO(event.end), 'h:mm a')}`}
+                        </p>
+                        {event.description && (
+                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">{event.description}</p>
+                        )}
+                        {event.location && (
+                          <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                            <MapPin size={12} />
+                            {event.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-slate-700">
+              <button
+                onClick={() => {
+                  setDayDetailDate(null)
+                  openNewEventModal(dayDetailDate)
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
+              >
+                <Plus size={18} />
+                Add Event
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Event Modal */}
       {showModal && (

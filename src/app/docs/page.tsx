@@ -94,10 +94,21 @@ export default function DocsPage() {
     }
   }, [])
 
+  // Fetch documents when search or folder changes (with debounce for search)
   useEffect(() => {
-    fetchDocuments()
+    const timer = setTimeout(() => {
+      fetchDocuments()
+    }, searchQuery ? 300 : 0)  // Debounce search, instant for folder changes
+    
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedFolder, fetchDocuments])
+
+  // Fetch folders once on mount
+  useEffect(() => {
     fetchFolders()
-  }, [fetchDocuments, fetchFolders])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchFolders])
 
   const handleRefresh = () => {
     setRefreshing(true)
