@@ -3,15 +3,16 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Task, PROJECTS } from '@/lib/types'
-import { GripVertical, Pencil, Trash2 } from 'lucide-react'
+import { GripVertical, Pencil, Trash2, Eye } from 'lucide-react'
 
 interface TaskCardProps {
   task: Task
   onEdit: (task: Task) => void
   onDelete: (id: string) => void
+  onView: (task: Task) => void
 }
 
-export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onEdit, onDelete, onView }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -88,12 +89,18 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
             </span>
           </div>
           
-          <h4 className="text-sm font-medium text-slate-100 mb-1 line-clamp-2">
+          <h4
+            className="text-sm font-medium text-slate-100 mb-1 line-clamp-2 cursor-pointer hover:text-blue-400 transition-colors"
+            onClick={() => onView(task)}
+          >
             {task.title}
           </h4>
           
           {task.description && (
-            <p className="text-xs text-slate-400 line-clamp-2 mb-2">
+            <p
+              className="text-xs text-slate-400 line-clamp-2 mb-2 cursor-pointer hover:text-slate-300 transition-colors"
+              onClick={() => onView(task)}
+            >
               {task.description}
             </p>
           )}
@@ -107,14 +114,23 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
             
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
+                onClick={() => onView(task)}
+                className="p-1 hover:bg-slate-600 rounded text-slate-400 hover:text-blue-400"
+                title="View"
+              >
+                <Eye size={14} />
+              </button>
+              <button
                 onClick={() => onEdit(task)}
                 className="p-1 hover:bg-slate-600 rounded text-slate-400 hover:text-slate-200"
+                title="Edit"
               >
                 <Pencil size={14} />
               </button>
               <button
                 onClick={() => onDelete(task.id)}
                 className="p-1 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400"
+                title="Delete"
               >
                 <Trash2 size={14} />
               </button>

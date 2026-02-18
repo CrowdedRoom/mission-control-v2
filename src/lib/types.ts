@@ -47,11 +47,18 @@ export type Document = {
   updated_at: string
 }
 
+export type ProjectStatus = 'backlog' | 'active' | 'completed'
+
 export type Project = {
   id: string
   name: string
+  description: string | null
+  status: ProjectStatus
+  github_url: string | null
   emoji: string
   color: string
+  created_at: string
+  updated_at: string
 }
 
 export const PROJECTS: Project[] = [

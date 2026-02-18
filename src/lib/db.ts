@@ -270,18 +270,54 @@ export async function getProjects(): Promise<Project[]> {
   return db.projects.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
+export async function createProject(project: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> {
   const db = await readDb()
   if (!db.projects) db.projects = []
   
   const newProject: Project = {
     id: generateProjectId(project.name),
-    ...project
+    ...project,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
   
   db.projects.push(newProject)
   await writeDb(db)
   return newProject
+}
+
+export async function getProjectById(id: string): Promise<Project | null> {
+  const db = await readDb()
+  if (!db.projects) return null
+  return db.projects.find(p => p.id === id) || null
+}
+
+export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {
+  const db = await readDb()
+  if (!db.projects) return null
+  
+  const index = db.projects.findIndex(p => p.id === id)
+  if (index === -1) return null
+  
+  db.projects[index] = {
+    ...db.projects[index],
+    ...updates,
+    updated_at: new Date().toISOString()
+  }
+  await writeDb(db)
+  return db.projects[index]
+}
+
+export async function deleteProject(id: string): Promise<boolean> {
+  const db = await readDb()
+  if (!db.projects) return false
+  
+  const index = db.projects.findIndex(p => p.id === id)
+  if (index === -1) return false
+  
+  db.projects.splice(index, 1)
+  await writeDb(db)
+  return true
 }
 
 function generateProjectId(name: string): string {

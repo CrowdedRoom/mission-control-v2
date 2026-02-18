@@ -20,13 +20,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
     }
     
-    // Validate required fields
     if (!body.name || body.name.trim() === '') {
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
     }
+
+    const validStatuses = ['backlog', 'active', 'completed']
+    const status = validStatuses.includes(body.status) ? body.status : 'backlog'
     
     const project = await createProject({
-      name: body.name,
+      name: body.name.trim(),
+      description: body.description?.trim() || null,
+      status,
+      github_url: body.github_url?.trim() || null,
       emoji: body.emoji || '📦',
       color: body.color || '#64748b'
     })

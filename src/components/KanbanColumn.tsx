@@ -13,6 +13,7 @@ interface KanbanColumnProps {
   tasks: Task[]
   onEdit: (task: Task) => void
   onDelete: (id: string) => void
+  onView: (task: Task) => void
   onAdd: () => void
   color: string
 }
@@ -22,8 +23,9 @@ export function KanbanColumn({
   title, 
   emoji, 
   tasks, 
-  onEdit, 
+  onEdit,
   onDelete,
+  onView,
   onAdd,
   color 
 }: KanbanColumnProps) {
@@ -51,11 +53,12 @@ export function KanbanColumn({
           strategy={verticalListSortingStrategy}
         >
           {tasks.map(task => (
-            <TaskCard 
-              key={task.id} 
-              task={task} 
+            <TaskCard
+              key={task.id}
+              task={task}
               onEdit={onEdit}
               onDelete={onDelete}
+              onView={onView}
             />
           ))}
         </SortableContext>

@@ -15,6 +15,7 @@ import { Task, Activity, Project } from '@/lib/types'
 import { KanbanColumn } from '@/components/KanbanColumn'
 import { TaskCard } from '@/components/TaskCard'
 import { TaskModal } from '@/components/TaskModal'
+import { TaskDetailModal } from '@/components/TaskDetailModal'
 import { ActivityFeed } from '@/components/ActivityFeed'
 import { StatsBar } from '@/components/StatsBar'
 import { NewProjectModal } from '@/components/NewProjectModal'
@@ -34,6 +35,7 @@ export default function TasksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [activeColumn, setActiveColumn] = useState<string>('backlog')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeDragTask, _setActiveDragTask] = useState<Task | null>(null)
@@ -279,6 +281,10 @@ export default function TasksPage() {
     setIsModalOpen(true)
   }
 
+  const openViewModal = (task: Task) => {
+    setViewingTask(task)
+  }
+
   const getTasksByStatus = (status: string) => 
     tasks.filter(t => t.status === status)
 
@@ -356,6 +362,7 @@ export default function TasksPage() {
                   tasks={getTasksByStatus(column.id)}
                   onEdit={openEditModal}
                   onDelete={handleDeleteTask}
+                  onView={openViewModal}
                   onAdd={() => openAddModal(column.id)}
                 />
               ))}
@@ -367,6 +374,7 @@ export default function TasksPage() {
                   task={activeDragTask}
                   onEdit={() => {}}
                   onDelete={() => {}}
+                  onView={() => {}}
                 />
               ) : null}
             </DragOverlay>
@@ -387,6 +395,14 @@ export default function TasksPage() {
         task={editingTask}
         defaultStatus={activeColumn}
         projects={projects}
+      />
+
+      <TaskDetailModal
+        isOpen={!!viewingTask}
+        task={viewingTask}
+        onClose={() => setViewingTask(null)}
+        onEdit={openEditModal}
+        onDelete={handleDeleteTask}
       />
 
       {isProjectModalOpen && (
