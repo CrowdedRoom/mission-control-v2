@@ -94,6 +94,25 @@ function getDb(): DatabaseType {
       notes TEXT,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS pipeline_apps (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      emoji TEXT NOT NULL DEFAULT '📱',
+      color TEXT NOT NULL DEFAULT '#3b82f6',
+      stack TEXT,
+      phase TEXT NOT NULL DEFAULT 'build',
+      phases TEXT NOT NULL DEFAULT '[]',
+      blocker TEXT,
+      next_action TEXT,
+      assignee TEXT DEFAULT 'larry',
+      notes TEXT,
+      store_url TEXT,
+      github_url TEXT,
+      revenue_monthly INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `)
 
   // Column migrations — safe to run on every startup
@@ -749,4 +768,140 @@ export function upsertRevenueGoal(data: Omit<RevenueGoal, 'id' | 'updated_at'>):
     notes: data.notes,
     updated_at: now
   }
+}
+
+// ============================================================================
+// Pipeline Apps
+// ============================================================================
+
+export type PipelineApp = {
+  id: string
+  name: string
+  emoji: string
+  color: string
+  stack: string | null
+  phase: string
+  phases: string[]
+  blocker: string | null
+  next_action: string | null
+  assignee: "dj" | "larry" | null
+  notes: string | null
+  store_url: string | null
+  github_url: string | null
+  revenue_monthly: number
+  created_at: string
+  updated_at: string
+}
+
+interface PipelineAppRow {
+  id: string
+  name: string
+  emoji: string
+  color: string
+  stack: string | null
+  phase: string
+  phases: string
+  blocker: string | null
+  next_action: string | null
+  assignee: string | null
+  notes: string | null
+  store_url: string | null
+  github_url: string | null
+  revenue_monthly: number
+  created_at: string
+  updated_at: string
+}
+
+function rowToPipelineApp(row: PipelineAppRow): PipelineApp {
+  return {
+    id: row.id,
+    name: row.name,
+    emoji: row.emoji,
+    color: row.color,
+    stack: row.stack,
+    phase: row.phase,
+    phases: JSON.parse(row.phases),
+    blocker: row.blocker,
+    next_action: row.next_action,
+    assignee: row.assignee as PipelineApp['assignee'],
+    notes: row.notes,
+    store_url: row.store_url,
+    github_url: row.github_url,
+    revenue_monthly: row.revenue_monthly,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  }
+}
+
+export function getPipelineApps(): PipelineApp[] {
+  const db = getDb()
+  const rows = db.prepare(`
+    SELECT * FROM pipeline_apps ORDER BY name ASC
+  `).all() as PipelineAppRow[]
+  return rows.map(rowToPipelineApp)
+}
+
+export function getPipelineAppById(id: string): PipelineApp | null {
+  const db = getDb()
+  const row = db.prepare(`SELECT * FROM pipeline_apps WHERE id = ?`).get(id) as PipelineAppRow | undefined
+  return row ? rowToPipelineApp(row) : null
+}
+
+export function upsertPipelineApp(app: Omit<PipelineApp, "created_at" | "updated_at">): PipelineApp {
+  const db = getDb()
+  const now = new Date().toISOString()
+  const existing = getPipelineAppById(app.id)
+
+  if (existing) {
+    db.prepare(`
+      UPDATE pipeline_apps SET
+        name = ?, emoji = ?, color = ?, stack = ?, phase = ?, phases = ?,
+        blocker = ?, next_action = ?, assignee = ?, notes = ?,
+        store_url = ?, github_url = ?, revenue_monthly = ?, updated_at = ?
+      WHERE id = ?
+    `).run(
+      app.name, app.emoji, app.color, app.stack, app.phase, JSON.stringify(app.phases),
+      app.blocker, app.next_action, app.assignee, app.notes,
+      app.store_url, app.github_url, app.revenue_monthly, now,
+      app.id
+    )
+    return { ...app, created_at: existing.created_at, updated_at: now }
+  } else {
+    db.prepare(`
+      INSERT INTO pipeline_apps (id, name, emoji, color, stack, phase, phases, blocker, next_action, assignee, notes, store_url, github_url, revenue_monthly, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      app.id, app.name, app.emoji, app.color, app.stack, app.phase, JSON.stringify(app.phases),
+      app.blocker, app.next_action, app.assignee, app.notes,
+      app.store_url, app.github_url, app.revenue_monthly, now, now
+    )
+    return { ...app, created_at: now, updated_at: now }
+  }
+}
+
+export function updatePipelineApp(id: string, updates: Partial<PipelineApp>): PipelineApp | null {
+  const db = getDb()
+  const existing = getPipelineAppById(id)
+  if (!existing) return null
+
+  const updated: PipelineApp = {
+    ...existing,
+    ...updates,
+    updated_at: new Date().toISOString()
+  }
+
+  db.prepare(`
+    UPDATE pipeline_apps SET
+      name = ?, emoji = ?, color = ?, stack = ?, phase = ?, phases = ?,
+      blocker = ?, next_action = ?, assignee = ?, notes = ?,
+      store_url = ?, github_url = ?, revenue_monthly = ?, updated_at = ?
+    WHERE id = ?
+  `).run(
+    updated.name, updated.emoji, updated.color, updated.stack, updated.phase, JSON.stringify(updated.phases),
+    updated.blocker, updated.next_action, updated.assignee, updated.notes,
+    updated.store_url, updated.github_url, updated.revenue_monthly, updated.updated_at,
+    id
+  )
+
+  return updated
 }
