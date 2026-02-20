@@ -167,7 +167,15 @@ export default function Dashboard() {
 
           {/* Recent Activity */}
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-slate-100 mb-4">📊 Recent Activity</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-100">📊 Recent Activity</h2>
+              <Link
+                href="/activity"
+                className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              >
+                View all <ArrowRight size={14} />
+              </Link>
+            </div>
             <ActivityFeed activities={activities.slice(0, 5)} />
           </div>
         </div>
