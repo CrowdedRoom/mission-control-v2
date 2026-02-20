@@ -92,16 +92,21 @@ export async function GET() {
 
     // Map subagent sessions to our format
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recentSubagents: SubagentSession[] = subagentSessions.map((s: any) => {
+    const recentSubagents: SubagentSession[] = subagentSessions.map((s: any, i: number) => {
       const now = Date.now()
-      const updatedAt = s.updatedAt ? new Date(s.updatedAt).getTime() : 0
-      const isActive = now - updatedAt < 60 * 60 * 1000 // Active if updated within last hour
+      // updatedAt may be an ISO string or a ms timestamp number
+      const updatedAtMs = s.updatedAt
+        ? (typeof s.updatedAt === 'number' ? s.updatedAt : new Date(s.updatedAt).getTime())
+        : 0
+      const updatedAtIso = updatedAtMs ? new Date(updatedAtMs).toISOString() : new Date().toISOString()
+      const isActive = now - updatedAtMs < 60 * 60 * 1000
 
+      const sessionKey = s.sessionKey ?? s.id ?? `session-${i}`
       return {
-        sessionKey: s.sessionKey,
-        label: s.label || s.sessionKey,
-        updatedAt: s.updatedAt,
-        kind: s.kind,
+        sessionKey,
+        label: s.label || s.name || sessionKey,
+        updatedAt: updatedAtIso,
+        kind: s.kind ?? 'subagent',
         status: isActive ? 'active' : 'completed',
       }
     })
