@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Task, Activity, PROJECTS } from '@/lib/types'
 import { ActivityFeed } from '@/components/ActivityFeed'
 import { SmartDashboard } from '@/components/SmartDashboard'
+import { LarryStatus } from '@/components/LarryStatus'
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -172,6 +173,9 @@ export default function Dashboard() {
 
         {/* Right Column */}
         <div className="space-y-4 md:space-y-6">
+          {/* Larry Status */}
+          <LarryStatus />
+
           {/* Quick Links */}
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Quick Links</h2>

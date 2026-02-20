@@ -1,8 +1,72 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Calendar as CalendarIcon, Trash2 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isToday } from 'date-fns'
+import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Calendar as CalendarIcon, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isToday, setHours, setMinutes, addDays, getDay } from 'date-fns'
+import type { CronJob } from '@/app/api/crons/route'
+
+// ---- Cron helpers ----
+
+type CronOccurrence = {
+  jobId: string
+  jobName: string
+  date: Date
+  status?: string
+  consecutiveErrors?: number
+  lastError?: string
+  nextRunAtMs?: number
+  lastRunAtMs?: number
+}
+
+/** Parse a simple cron expr and return occurrences in [from, to] range */
+function parseCronOccurrences(job: CronJob, from: Date, to: Date): CronOccurrence[] {
+  if (job.schedule.kind !== 'cron' || !job.schedule.expr) return []
+  const parts = job.schedule.expr.trim().split(/\s+/)
+  if (parts.length < 5) return []
+  const [minStr, hourStr, , , dowStr] = parts
+  const minute = parseInt(minStr, 10)
+  const hour = parseInt(hourStr, 10)
+  if (isNaN(hour) || isNaN(minute)) return []
+
+  const occurrences: CronOccurrence[] = []
+  const cursor = new Date(from)
+  cursor.setHours(0, 0, 0, 0)
+
+  const targetDow = dowStr === '*' ? null : parseInt(dowStr, 10) // 0=Sun
+
+  while (cursor <= to) {
+    const dayOk = targetDow === null || getDay(cursor) === targetDow
+    if (dayOk) {
+      const d = setMinutes(setHours(new Date(cursor), hour), minute)
+      occurrences.push({
+        jobId: job.id,
+        jobName: job.name,
+        date: d,
+        status: job.state.lastStatus,
+        consecutiveErrors: job.state.consecutiveErrors,
+        lastError: job.state.lastError,
+        nextRunAtMs: job.state.nextRunAtMs,
+        lastRunAtMs: job.state.lastRunAtMs,
+      })
+    }
+    addDays(cursor, 1) // pure, doesn't mutate
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return occurrences
+}
+
+function cronScheduleLabel(expr: string): string {
+  const parts = expr.trim().split(/\s+/)
+  if (parts.length < 5) return expr
+  const [minStr, hourStr, , , dowStr] = parts
+  const minute = parseInt(minStr, 10)
+  const hour = parseInt(hourStr, 10)
+  const timeStr = `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`
+  if (dowStr === '*') return `Daily at ${timeStr}`
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+  const dowNum = parseInt(dowStr, 10)
+  return `${isNaN(dowNum) ? dowStr : days[dowNum]}s at ${timeStr}`
+}
 
 type CalendarEvent = {
   id: string
@@ -56,6 +120,9 @@ export default function CalendarPage() {
     color: '#3b82f6'
   })
   const [dayDetailDate, setDayDetailDate] = useState<Date | null>(null)
+  const [cronJobs, setCronJobs] = useState<CronJob[]>([])
+  const [showCronLayer, setShowCronLayer] = useState(true)
+  const [selectedCronOcc, setSelectedCronOcc] = useState<CronOccurrence | null>(null)
 
   // Helper: Format date for datetime-local input (YYYY-MM-DDTHH:mm in local time)
   const formatForInput = (date: Date) => {
@@ -90,9 +157,20 @@ export default function CalendarPage() {
     }
   }, [currentDate])
 
+  const fetchCronJobs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/crons')
+      if (res.ok) {
+        const data = await res.json()
+        setCronJobs(data.jobs ?? [])
+      }
+    } catch { /* silent */ }
+  }, [])
+
   useEffect(() => {
     fetchEvents()
-  }, [fetchEvents])
+    fetchCronJobs()
+  }, [fetchEvents, fetchCronJobs])
 
   const getEventsForDay = (day: Date) => {
     return events.filter(event => {
@@ -228,6 +306,17 @@ export default function CalendarPage() {
             </h2>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setShowCronLayer(v => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  showCronLayer
+                    ? 'bg-indigo-600/80 text-indigo-100 border border-indigo-500'
+                    : 'bg-slate-700 text-slate-400 border border-slate-600'
+                }`}
+                title="Toggle Larry's scheduled jobs"
+              >
+                🦝 Larry
+              </button>
+              <button
                 onClick={() => setCurrentDate(subMonths(currentDate, 1))}
                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-slate-200"
               >
@@ -267,6 +356,13 @@ export default function CalendarPage() {
               const todayClass = isToday(day)
               
               const maxEvents = typeof window !== 'undefined' && window.innerWidth < 768 ? 2 : 3
+
+              // Cron occurrences for this day
+              const dayCronOccs = showCronLayer
+                ? cronJobs.flatMap(job =>
+                    parseCronOccurrences(job, day, day)
+                  )
+                : []
               
               return (
                 <button
@@ -314,6 +410,28 @@ export default function CalendarPage() {
                         +{dayEvents.length - maxEvents} more
                       </div>
                     )}
+                    {/* Cron occurrences */}
+                    {dayCronOccs.map((occ, i) => (
+                      <div
+                        key={`cron-${occ.jobId}-${i}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedCronOcc(occ)
+                        }}
+                        className="text-[10px] md:text-xs p-0.5 md:p-1 rounded truncate cursor-pointer hover:opacity-80"
+                        style={{
+                          backgroundColor: '#8b5cf620',
+                          color: (occ.consecutiveErrors ?? 0) > 0 ? '#f87171' : '#a78bfa',
+                          borderLeft: `2px solid ${(occ.consecutiveErrors ?? 0) > 0 ? '#f87171' : '#8b5cf6'}`
+                        }}
+                      >
+                        <span className="hidden md:inline">
+                          🦝 {occ.jobName}
+                          {(occ.consecutiveErrors ?? 0) > 0 && ' ⚠️'}
+                        </span>
+                        <span className="md:hidden">🦝</span>
+                      </div>
+                    ))}
                   </div>
                 </button>
               )
@@ -382,6 +500,79 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      {/* Cron Job Detail Popover */}
+      {selectedCronOcc && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl w-full max-w-sm border border-indigo-500/50 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🦝</span>
+                <h3 className="text-base font-semibold text-slate-100">{selectedCronOcc.jobName}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedCronOcc(null)}
+                className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors text-slate-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                {selectedCronOcc.status === 'ok' ? (
+                  <CheckCircle2 size={16} className="text-green-400" />
+                ) : selectedCronOcc.status === 'error' ? (
+                  <AlertTriangle size={16} className="text-red-400" />
+                ) : (
+                  <Clock size={16} className="text-slate-400" />
+                )}
+                <span className={`text-sm font-medium ${
+                  selectedCronOcc.status === 'ok' ? 'text-green-400' :
+                  selectedCronOcc.status === 'error' ? 'text-red-400' : 'text-slate-400'
+                }`}>
+                  {selectedCronOcc.status === 'ok' ? 'Last run: OK' :
+                   selectedCronOcc.status === 'error' ? `Error (${selectedCronOcc.consecutiveErrors} consecutive)` :
+                   'Never run'}
+                </span>
+              </div>
+
+              {/* Schedule */}
+              <div className="bg-slate-700/50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Schedule</span>
+                  <span className="text-slate-200 text-right max-w-[160px]">
+                    {/* We need the job expr here — stored on the occurrence via jobId */}
+                    {cronJobs.find(j => j.id === selectedCronOcc.jobId)?.schedule.expr
+                      ? cronScheduleLabel(cronJobs.find(j => j.id === selectedCronOcc.jobId)!.schedule.expr!)
+                      : '—'}
+                  </span>
+                </div>
+                {selectedCronOcc.lastRunAtMs && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Last run</span>
+                    <span className="text-slate-200">{format(new Date(selectedCronOcc.lastRunAtMs), 'MMM d, h:mm a')}</span>
+                  </div>
+                )}
+                {selectedCronOcc.nextRunAtMs && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Next run</span>
+                    <span className="text-slate-200">{format(new Date(selectedCronOcc.nextRunAtMs), 'MMM d, h:mm a')}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Error message */}
+              {selectedCronOcc.lastError && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                  <p className="text-xs text-red-400 font-medium mb-1">Last Error</p>
+                  <p className="text-xs text-red-300 break-words">{selectedCronOcc.lastError}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Day Detail Modal */}
       {dayDetailDate && (
