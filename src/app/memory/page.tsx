@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Search, Clock, Pin, FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { formatDistanceToNow } from 'date-fns'
 import type { MemoryFile } from '@/app/api/memories/route'
 
@@ -46,7 +47,7 @@ export default function MemoryPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-0px)] overflow-hidden">
+    <div className="flex h-[calc(100vh-64px)] lg:h-screen overflow-hidden">
       {/* Left Panel — File List */}
       <div className="w-72 shrink-0 border-r border-slate-700 bg-slate-900 flex flex-col">
         {/* Header */}
@@ -165,34 +166,37 @@ export default function MemoryPage() {
             </div>
 
             {/* Markdown content */}
-            <div className="prose prose-invert prose-sm max-w-none
-              prose-headings:text-slate-100 
-              prose-p:text-slate-300 
-              prose-strong:text-slate-100
-              prose-code:text-blue-300 
-              prose-code:bg-slate-800 
-              prose-code:px-1.5
-              prose-code:py-0.5
-              prose-code:rounded
-              prose-code:before:content-none
-              prose-code:after:content-none
-              prose-pre:bg-slate-800 
-              prose-pre:border 
-              prose-pre:border-slate-700
-              prose-a:text-blue-400 
-              prose-a:no-underline
-              hover:prose-a:underline
-              prose-blockquote:border-slate-600 
-              prose-blockquote:text-slate-400
-              prose-ul:text-slate-300
-              prose-ol:text-slate-300
-              prose-li:text-slate-300
-              prose-hr:border-slate-700
-              prose-table:text-slate-300
-              prose-th:text-slate-200
-              prose-td:text-slate-300
-            ">
-              <ReactMarkdown>{selected.content}</ReactMarkdown>
+            <div className="text-sm">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-slate-100 border-b border-slate-700 pb-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-slate-100">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-base font-semibold mt-4 mb-2 text-slate-200">{children}</h3>,
+                  h4: ({ children }) => <h4 className="text-sm font-semibold mt-3 mb-1 text-slate-200">{children}</h4>,
+                  p: ({ children }) => <p className="mb-3 text-slate-300 leading-relaxed">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1 text-slate-300 ml-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1 text-slate-300 ml-2">{children}</ol>,
+                  li: ({ children }) => <li className="text-slate-300">{children}</li>,
+                  a: ({ href, children }) => <a href={href} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                  code: ({ children, className }) => {
+                    const isBlock = className?.includes('language-')
+                    return isBlock
+                      ? <code className={`block bg-slate-800 border border-slate-700 rounded-lg p-3 text-blue-300 text-xs overflow-x-auto mb-3 ${className}`}>{children}</code>
+                      : <code className="bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
+                  },
+                  pre: ({ children }) => <pre className="bg-slate-800 border border-slate-700 rounded-lg p-4 overflow-x-auto mb-3 text-xs">{children}</pre>,
+                  blockquote: ({ children }) => <blockquote className="border-l-4 border-slate-600 pl-4 my-3 text-slate-400 italic">{children}</blockquote>,
+                  strong: ({ children }) => <strong className="font-semibold text-slate-100">{children}</strong>,
+                  em: ({ children }) => <em className="italic text-slate-300">{children}</em>,
+                  hr: () => <hr className="border-slate-700 my-4" />,
+                  table: ({ children }) => <div className="overflow-x-auto mb-3"><table className="w-full text-sm border-collapse">{children}</table></div>,
+                  th: ({ children }) => <th className="text-left p-2 bg-slate-700 text-slate-200 font-medium border border-slate-600">{children}</th>,
+                  td: ({ children }) => <td className="p-2 text-slate-300 border border-slate-700">{children}</td>,
+                }}
+              >
+                {selected.content}
+              </ReactMarkdown>
             </div>
           </div>
         )}
