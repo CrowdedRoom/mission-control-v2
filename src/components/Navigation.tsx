@@ -3,20 +3,21 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  CheckSquare, 
-  Calendar, 
-  FileText, 
+import {
+  LayoutDashboard,
+  FolderKanban,
+  CheckSquare,
+  Calendar,
+  FileText,
   Brain,
   BookOpen,
-  Users, 
+  Users,
   Settings,
   Zap,
   Rocket,
   Menu,
-  X
+  X,
+  Activity
 } from 'lucide-react'
 
 const navigation = [
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Documents', href: '/docs', icon: FileText },
   { name: 'Brain Dump', href: '/capture', icon: Brain },
   { name: 'Audit', href: '/audit', icon: Zap },
+  { name: 'Activity', href: '/activity', icon: Activity },
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
