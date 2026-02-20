@@ -17,8 +17,10 @@ import {
   Rocket,
   Menu,
   X,
-  Activity
+  Activity,
+  Search
 } from 'lucide-react'
+import { openGlobalSearch } from './ClientLayout'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -122,6 +124,20 @@ export function Navigation() {
               </Link>
             )
           })}
+        </div>
+
+        {/* Search Shortcut */}
+        <div className="px-4 pb-2">
+          <button
+            onClick={openGlobalSearch}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+          >
+            <Search size={16} />
+            <span className="flex-1 text-left">Search</span>
+            <kbd className="px-1.5 py-0.5 text-xs bg-slate-700 rounded border border-slate-600">
+              ⌘K
+            </kbd>
+          </button>
         </div>
 
         {/* Quick Stats */}

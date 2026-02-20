@@ -1,10 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getTasks, createTask, logActivity } from '@/lib/db'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get('q')?.toLowerCase() || ''
+
     const tasks = await getTasks()
-    return NextResponse.json(tasks)
+
+    const filtered = query
+      ? tasks.filter((task: { title: string; description?: string | null }) =>
+          task.title.toLowerCase().includes(query) ||
+          (task.description && task.description.toLowerCase().includes(query))
+        )
+      : tasks
+
+    return NextResponse.json(filtered)
   } catch (error) {
     console.error('Error fetching tasks:', error)
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
