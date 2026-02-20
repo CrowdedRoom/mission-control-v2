@@ -6,6 +6,7 @@ import { Task, Activity, PROJECTS } from '@/lib/types'
 import { ActivityFeed } from '@/components/ActivityFeed'
 import { SmartDashboard } from '@/components/SmartDashboard'
 import { LarryStatus } from '@/components/LarryStatus'
+import { RevenueTracker } from '@/components/RevenueTracker'
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -173,6 +174,9 @@ export default function Dashboard() {
 
         {/* Right Column */}
         <div className="space-y-4 md:space-y-6">
+          {/* Revenue Goal - Most Important */}
+          <RevenueTracker />
+
           {/* Larry Status */}
           <LarryStatus />
 

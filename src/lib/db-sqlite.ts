@@ -84,10 +84,20 @@ function getDb(): DatabaseType {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS revenue_goals (
+      id TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      monthly_revenue INTEGER NOT NULL DEFAULT 0,
+      target_monthly INTEGER NOT NULL DEFAULT 20833,
+      apps_live INTEGER NOT NULL DEFAULT 0,
+      notes TEXT,
+      updated_at TEXT NOT NULL
+    );
   `)
 
   // Column migrations — safe to run on every startup
-  const taskCols = _db.pragma('table_info(tasks)').map((c: { name: string }) => c.name)
+  const taskCols = (_db.pragma('table_info(tasks)') as { name: string }[]).map((c) => c.name)
   if (!taskCols.includes('createdFrom')) {
     _db.exec('ALTER TABLE tasks ADD COLUMN createdFrom TEXT')
   }
@@ -669,4 +679,74 @@ function generateProjectId(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+// ============================================================================
+// Revenue Goals
+// ============================================================================
+
+export type RevenueGoal = {
+  id: string
+  label: string
+  monthly_revenue: number   // current monthly in dollars
+  target_monthly: number    // 250000/12 = 20833
+  apps_live: number
+  notes: string | null
+  updated_at: string
+}
+
+interface RevenueGoalRow {
+  id: string
+  label: string
+  monthly_revenue: number
+  target_monthly: number
+  apps_live: number
+  notes: string | null
+  updated_at: string
+}
+
+function rowToRevenueGoal(row: RevenueGoalRow): RevenueGoal {
+  return {
+    id: row.id,
+    label: row.label,
+    monthly_revenue: row.monthly_revenue,
+    target_monthly: row.target_monthly,
+    apps_live: row.apps_live,
+    notes: row.notes,
+    updated_at: row.updated_at
+  }
+}
+
+export function getRevenueGoal(): RevenueGoal | null {
+  const db = getDb()
+  const row = db.prepare(`SELECT * FROM revenue_goals WHERE id = ?`).get('main') as RevenueGoalRow | undefined
+  return row ? rowToRevenueGoal(row) : null
+}
+
+export function upsertRevenueGoal(data: Omit<RevenueGoal, 'id' | 'updated_at'>): RevenueGoal {
+  const db = getDb()
+  const now = new Date().toISOString()
+
+  db.prepare(`
+    INSERT OR REPLACE INTO revenue_goals (id, label, monthly_revenue, target_monthly, apps_live, notes, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'main',
+    data.label,
+    data.monthly_revenue,
+    data.target_monthly,
+    data.apps_live,
+    data.notes ?? null,
+    now
+  )
+
+  return {
+    id: 'main',
+    label: data.label,
+    monthly_revenue: data.monthly_revenue,
+    target_monthly: data.target_monthly,
+    apps_live: data.apps_live,
+    notes: data.notes,
+    updated_at: now
+  }
 }
