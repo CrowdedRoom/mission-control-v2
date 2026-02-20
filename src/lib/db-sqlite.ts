@@ -86,6 +86,12 @@ function getDb(): DatabaseType {
     );
   `)
 
+  // Column migrations — safe to run on every startup
+  const taskCols = _db.pragma('table_info(tasks)').map((c: { name: string }) => c.name)
+  if (!taskCols.includes('createdFrom')) {
+    _db.exec('ALTER TABLE tasks ADD COLUMN createdFrom TEXT')
+  }
+
   return _db
 }
 
